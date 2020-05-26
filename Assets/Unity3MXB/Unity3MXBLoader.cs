@@ -197,10 +197,13 @@ namespace Unity3MXB
                                 string textureId;
                                 if(_meshTextureIdCache.TryGetValue(node.Resources[j], out textureId))
                                 {
-                                    Texture2D texture;
-                                    if(_textureCache.TryGetValue(textureId, out texture))
+                                    if(textureId != null)
                                     {
-                                        pagedLOD.SetTexture(texture);
+                                        Texture2D texture;
+                                        if (_textureCache.TryGetValue(textureId, out texture))
+                                        {
+                                            pagedLOD.SetTexture(texture);
+                                        }
                                     }
                                 }
                             }
