@@ -95,6 +95,12 @@ namespace Unity3MXB
             // TODO: add cache
             this.FrameNumberOfLastTraversal = frameCount;
 
+            // TODO: add shadow
+
+            // TODO: add collider
+
+            // TODO: optimize run speed
+
             // cull by bounding sphere
             PlaneClipMask mask = this.BoundingSphere.IntersectPlanes(planes, PlaneClipMask.GetDefaultMask());
             if (mask.Intersection == IntersectionType.OUTSIDE)
