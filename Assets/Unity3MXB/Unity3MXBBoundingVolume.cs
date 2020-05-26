@@ -119,10 +119,6 @@ namespace Unity3MXB
 
         public abstract void DebugDraw(Color c, Transform t);
 
-        public abstract float MinimumHeight();
-
-        public abstract float MaximumHeight();
-
         public abstract BoundingSphere BoundingSphere();
 
         public abstract float Volume();
@@ -180,36 +176,7 @@ namespace Unity3MXB
 
         public override void DebugDraw(Color col, Transform t)
         {
-            Vector3 a = Center + HalfAxesX + HalfAxesY + HalfAxesZ;
-            Vector3 b = Center - HalfAxesX + HalfAxesY + HalfAxesZ;
-            Vector3 c = Center + HalfAxesX - HalfAxesY + HalfAxesZ;
-            Vector3 d = Center - HalfAxesX - HalfAxesY + HalfAxesZ;
-            Vector3 e = Center + HalfAxesX + HalfAxesY - HalfAxesZ;
-            Vector3 f = Center - HalfAxesX + HalfAxesY - HalfAxesZ;
-            Vector3 g = Center + HalfAxesX - HalfAxesY - HalfAxesZ; 
-            Vector3 h = Center - HalfAxesX - HalfAxesY - HalfAxesZ;
-
-            a = t.TransformPoint(a);
-            b = t.TransformPoint(b);
-            c = t.TransformPoint(c);
-            d = t.TransformPoint(d);
-            e = t.TransformPoint(e);
-            f = t.TransformPoint(f);
-            g = t.TransformPoint(g);
-            h = t.TransformPoint(h);
-
-            //Unity3MXBDebug.DrawLine(a, b, col);
-            //Unity3MXBDebug.DrawLine(a, c, col);
-            //Unity3MXBDebug.DrawLine(c, d, col);
-            //Unity3MXBDebug.DrawLine(b, d, col);
-            //Unity3MXBDebug.DrawLine(e, f, col);
-            //Unity3MXBDebug.DrawLine(e, g, col);
-            //Unity3MXBDebug.DrawLine(g, h, col);
-            //Unity3MXBDebug.DrawLine(f, h, col);
-            //Unity3MXBDebug.DrawLine(a, e, col);
-            //Unity3MXBDebug.DrawLine(b, f, col);
-            //Unity3MXBDebug.DrawLine(c, g, col);
-            //Unity3MXBDebug.DrawLine(d, h, col);
+            throw new NotImplementedException();
         }
 
         public override float DistanceTo(Vector3 point)
@@ -296,16 +263,6 @@ namespace Unity3MXB
             return IntersectionType.INTERSECTING;
         }
 
-        public override float MaximumHeight()
-        {
-            return this.Center.y + HalfAxesY.y; // TODO: Should this be Z?  Tileset coords or unity tileset coords?
-        }
-
-        public override float MinimumHeight()
-        {
-            return this.Center.y - HalfAxesY.y; // TODO: Should this be Z?  Tileset coords or unity tileset coords?
-        }
-
         public override BoundingSphere BoundingSphere()
         {
             return new TileBoundingSphere(this).BoundingSphere();
@@ -388,16 +345,6 @@ namespace Unity3MXB
             return Mathf.Max(0.0f, Vector3.Distance(this.Center, point) - this.Radius);
         }
 
-        public override float MaximumHeight()
-        {
-            return this.Center.y + Radius; // TODO: Should this be Z?  Tileset coords or unity tileset coords?
-        }
-
-        public override float MinimumHeight()
-        {
-            return this.Center.y - Radius; // TODO: Should this be Z?  Tileset coords or unity tileset coords?
-        }
-
         public override BoundingSphere BoundingSphere()
         {
             return new BoundingSphere(Center, Radius);
@@ -439,16 +386,6 @@ namespace Unity3MXB
         }
 
         public override IntersectionType IntersectPlane(Plane plane)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override float MaximumHeight()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override float MinimumHeight()
         {
             throw new NotImplementedException();
         }

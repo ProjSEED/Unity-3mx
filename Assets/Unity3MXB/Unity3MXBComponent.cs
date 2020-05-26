@@ -31,6 +31,7 @@ namespace Unity3MXB
         {
             if(this.Root != null)
             {
+                // TODO: support multi camera
                 Camera cam = Camera.main;
 
                 // All of our bounding boxes and tiles are using tileset coordinate frame so lets get our frustrum planes

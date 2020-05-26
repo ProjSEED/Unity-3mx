@@ -94,6 +94,7 @@ namespace Unity3MXB
 
         public void Traverse(int frameCount, Vector4 pixelSizeVector, Plane[] planes)
         {
+            // TODO: add cache
             this.FrameNumberOfLastTraversal = frameCount;
 
             // cull by bounding sphere
