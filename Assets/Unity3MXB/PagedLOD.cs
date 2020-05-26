@@ -104,8 +104,8 @@ namespace Unity3MXB
                 return;
             }
 
-            // calc screenDiameter
-            float screenDiameter = Mathf.Abs(this.BoundingSphere.Radius / (Vector4.Dot(this.BoundingSphere.Center, pixelSizeVector) + pixelSizeVector.w));
+            // traverse based on screenDiameter
+            float screenDiameter = this.BoundingSphere.ScreenDiameter(pixelSizeVector);
             if (screenDiameter < MaxScreenDiameter || this.Children.Count == 0)
             {
                 this.EnableRenderer(true);

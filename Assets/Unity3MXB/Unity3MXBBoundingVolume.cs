@@ -123,6 +123,8 @@ namespace Unity3MXB
 
         public abstract float Volume();
 
+        public abstract float ScreenDiameter(Vector4 pixelSizeVector);
+
         public abstract string SizeString();
 
         public PlaneClipMask IntersectPlanes(Plane[] planes)
@@ -207,6 +209,10 @@ namespace Unity3MXB
         public override float Volume()
         {
             return (4.0f / 3.0f) * Mathf.PI * Radius * Radius * Radius;
+        }
+        public override float ScreenDiameter(Vector4 pixelSizeVector)
+        {
+            return Mathf.Abs(this.Radius / (Vector4.Dot(this.Center, pixelSizeVector) + pixelSizeVector.w));
         }
 
         public override string SizeString()
