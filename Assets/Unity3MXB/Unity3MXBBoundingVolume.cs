@@ -110,7 +110,7 @@ namespace Unity3MXB
 
     }
 
-    public abstract class Unity3DTileBoundingVolume
+    public abstract class Unity3MXBBoundingVolume
     {
 
         public abstract IntersectionType IntersectPlane(Plane plane);
@@ -163,7 +163,7 @@ namespace Unity3MXB
     /// and
     /// https://github.com/AnalyticalGraphicsInc/cesium/blob/master/Source/Scene/TileOrientedBoundingBox.js 
     /// </summary>
-    public class TileOrientedBoundingBox : Unity3DTileBoundingVolume
+    public class TileOrientedBoundingBox : Unity3MXBBoundingVolume
     {
         public Vector3 Center;
         public Vector3 HalfAxesX;
@@ -333,7 +333,7 @@ namespace Unity3MXB
         }
     }
 
-    public class TileBoundingSphere : Unity3DTileBoundingVolume
+    public class TileBoundingSphere : Unity3MXBBoundingVolume
     {
         public Vector3 Center;
         public float Radius;
@@ -420,7 +420,7 @@ namespace Unity3MXB
     }
 
     // TODO: Add support for bounding regions
-    public class TileBoundingRegion : Unity3DTileBoundingVolume
+    public class TileBoundingRegion : Unity3MXBBoundingVolume
     {
 
         public TileBoundingRegion()
