@@ -153,143 +153,6 @@ namespace Unity3MXB
         }
     }
 
-    /// <summary>
-    /// Port from 
-    /// https://github.com/AnalyticalGraphicsInc/cesium/blob/master/Source/Core/OrientedBoundingBox.js
-    /// and
-    /// https://github.com/AnalyticalGraphicsInc/cesium/blob/master/Source/Scene/TileOrientedBoundingBox.js 
-    /// </summary>
-    public class TileOrientedBoundingBox : Unity3MXBBoundingVolume
-    {
-        public Vector3 Center;
-        public Vector3 HalfAxesX;
-        public Vector3 HalfAxesY;
-        public Vector3 HalfAxesZ;
-
-        public TileOrientedBoundingBox(Vector3 center, Vector3 halfAxesX, Vector3 halfAxesY, Vector3 halfAxesZ)
-        {
-            this.Center = center;
-            this.HalfAxesX = halfAxesX;
-            this.HalfAxesY = halfAxesY;
-            this.HalfAxesZ = halfAxesZ;
-        }
-
-        public override void DebugDraw(Color col, Transform t)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override float DistanceTo(Vector3 point)
-        {
-            var offset = point - this.Center;
-
-            var u = HalfAxesX;
-            var v = HalfAxesY;
-            var w = HalfAxesZ;
-
-            var uHalf = u.magnitude;
-            var vHalf = v.magnitude;
-            var wHalf = w.magnitude;
-
-            u.Normalize();
-            v.Normalize();
-            w.Normalize();
-
-            Vector3 pPrime = new Vector3();
-            pPrime.x = Vector3.Dot(offset, u);
-            pPrime.y = Vector3.Dot(offset, v);
-            pPrime.z = Vector3.Dot(offset, w);
-
-            float distanceSquared = 0.0f;
-            float d;
-
-            if (pPrime.x < -uHalf)
-            {
-                d = pPrime.x + uHalf;
-                distanceSquared += d * d;
-            }
-            else if (pPrime.x > uHalf)
-            {
-                d = pPrime.x - uHalf;
-                distanceSquared += d * d;
-            }
-
-            if (pPrime.y < -vHalf)
-            {
-                d = pPrime.y + vHalf;
-                distanceSquared += d * d;
-            }
-            else if (pPrime.y > vHalf)
-            {
-                d = pPrime.y - vHalf;
-                distanceSquared += d * d;
-            }
-
-            if (pPrime.z < -wHalf)
-            {
-                d = pPrime.z + wHalf;
-                distanceSquared += d * d;
-            }
-            else if (pPrime.z > wHalf)
-            {
-                d = pPrime.z - wHalf;
-                distanceSquared += d * d;
-            }
-            return Mathf.Sqrt(distanceSquared);
-        }
-        
-        public override IntersectionType IntersectPlane(Plane plane)
-        {
-            Vector3 normal = plane.normal;
-            var u = HalfAxesX;
-            var v = HalfAxesY;
-            var w = HalfAxesZ;
-
-            float radEffective = Mathf.Abs(normal.x * u.x + normal.y * u.y + normal.z * u.z) +
-                                 Mathf.Abs(normal.x * v.x + normal.y * v.y + normal.z * v.z) +
-                                 Mathf.Abs(normal.x * w.x + normal.y * w.y + normal.z * w.z);
-            var distanceToPlane = Vector3.Dot(normal, this.Center) + plane.distance;
-
-            if (distanceToPlane <= -radEffective)
-            {
-                // The entire box is on the negative side of the plane normal
-                return IntersectionType.OUTSIDE;
-            }
-            else if (distanceToPlane >= radEffective)
-            {
-                // The entire box is on the positive side of the plane normal
-                return IntersectionType.INSIDE;
-            }
-            return IntersectionType.INTERSECTING;
-        }
-
-        public override BoundingSphere BoundingSphere()
-        {
-            return new TileBoundingSphere(this).BoundingSphere();
-        }
-
-        public override float Volume()
-        {
-            var d = 2 * (HalfAxesX + HalfAxesY + HalfAxesZ);
-            return Mathf.Abs(d.x) * Mathf.Abs(d.y) * Mathf.Abs(d.z);
-        }
-
-        public override string SizeString()
-        {
-            var d = 2 * (HalfAxesX + HalfAxesY + HalfAxesZ);
-            return string.Format("{0:f3}x{1:f3}x{2:f3}", Mathf.Abs(d.x), Mathf.Abs(d.y), Mathf.Abs(d.z));
-        }
-
-        public void Transform(Matrix4x4 transform)
-        {
-            // Find the transformed center and halfAxes
-            this.Center = transform.MultiplyPoint(this.Center);
-            this.HalfAxesX = transform.MultiplyVector(this.HalfAxesX);
-            this.HalfAxesY = transform.MultiplyVector(this.HalfAxesY);
-            this.HalfAxesZ = transform.MultiplyVector(this.HalfAxesZ);
-        }
-    }
-
     public class TileBoundingSphere : Unity3MXBBoundingVolume
     {
         public Vector3 Center;
@@ -299,15 +162,6 @@ namespace Unity3MXB
         {
             this.Center = center;
             this.Radius = radius;
-        }
-
-        public TileBoundingSphere(TileOrientedBoundingBox box)
-        {
-            this.Center = box.Center;
-            var u = box.HalfAxesX;
-            var v = box.HalfAxesY;
-            var w = box.HalfAxesZ;
-            this.Radius = (u + v + w).magnitude;
         }
 
         public void Transform(Matrix4x4 transform)
@@ -361,46 +215,6 @@ namespace Unity3MXB
         }
 
         public override void DebugDraw(Color c, Transform t)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    // TODO: Add support for bounding regions
-    public class TileBoundingRegion : Unity3MXBBoundingVolume
-    {
-
-        public TileBoundingRegion()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void DebugDraw(Color c, Transform t)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override float DistanceTo(Vector3 point)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override IntersectionType IntersectPlane(Plane plane)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override BoundingSphere BoundingSphere()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override float Volume()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override string SizeString()
         {
             throw new NotImplementedException();
         }

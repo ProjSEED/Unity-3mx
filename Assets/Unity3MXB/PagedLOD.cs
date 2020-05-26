@@ -83,8 +83,6 @@ namespace Unity3MXB
             {
                 pagedLOD.Go.SetActive(false);
                 pagedLOD.mr.material.SetTexture("_MainTex", null);
-                //Resources.UnloadAsset(pagedLOD.mf.mesh);
-                //Resources.UnloadAsset(pagedLOD.mr.material);
                 GameObject.Destroy(pagedLOD.Go);
             }
             this.LoadedChildNode.Clear();
@@ -98,16 +96,16 @@ namespace Unity3MXB
             this.FrameNumberOfLastTraversal = frameCount;
 
             // cull by bounding sphere
-            PlaneClipMask mask = BoundingSphere.IntersectPlanes(planes, PlaneClipMask.GetDefaultMask());
+            PlaneClipMask mask = this.BoundingSphere.IntersectPlanes(planes, PlaneClipMask.GetDefaultMask());
             if (mask.Intersection == IntersectionType.OUTSIDE)
             {
-                this.EnableRenderer(true);
+                this.EnableRenderer(false);
                 this.UnloadChildren();
                 return;
             }
 
             // calc screenDiameter
-            float screenDiameter = Mathf.Abs(this.BoundingSphere.Radius / Vector4.Dot(new Vector4(this.BoundingSphere.Center.x, this.BoundingSphere.Center.y, this.BoundingSphere.Center.z, 1), pixelSizeVector));
+            float screenDiameter = Mathf.Abs(this.BoundingSphere.Radius / (Vector4.Dot(this.BoundingSphere.Center, pixelSizeVector) + pixelSizeVector.w));
             if (screenDiameter < MaxScreenDiameter || this.Children.Count == 0)
             {
                 this.EnableRenderer(true);
