@@ -37,6 +37,7 @@ namespace Unity3MXB
             this.Go.name = name;
 
             this.Go.transform.SetParent(parent, false);
+            this.Go.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
             this.info = this.Go.AddComponent<PagedLODInfo>();
             this.mf = this.Go.AddComponent<MeshFilter>();
             this.mr = this.Go.AddComponent<MeshRenderer>();
