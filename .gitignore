@@ -3,6 +3,8 @@
 /obj
 /Logs
 /.vs
+/Build
 Assembly-CSharp.csproj
 Assembly-CSharp-Editor.csproj
+Assembly-CSharp.Player.csproj
 Unity3MXB.sln
