@@ -9,9 +9,8 @@ namespace Unity3MXB
         
     }
 
-    public class RawPagedLOD
+    public class RawTexMesh
     {
-        // mesh
         public List<Vector3> Vertices = new List<Vector3>();
         public List<Vector2> UVList = new List<Vector2>();
         public List<Vector3> Normals = new List<Vector3>();
@@ -19,8 +18,22 @@ namespace Unity3MXB
         public Vector3 BBMin = new Vector3();
         public Vector3 BBMax = new Vector3();
 
-        // texture
         public List<byte> JpgData = new List<byte>();
+    }
+
+    public class RawPagedLOD
+    {
+        public string dir;
+        public string id;
+
+        public Vector3 BBMin;
+        public Vector3 BBMax;
+        public TileBoundingSphere BoundingSphere;
+        public float MaxScreenDiameter;
+
+        public List<string> ChildrenFiles; 
+
+        public List<RawTexMesh> Mesh = new List<RawTexMesh>();
     }
 
     public class PagedLOD
@@ -34,7 +47,7 @@ namespace Unity3MXB
         };
 
         private string dir;
-        private GameObject Go;
+        private GameObject Go;  // TODO: one node could contains more than one mesh, use GameObject as a group, insert each mesh to a child GameObject
         private MeshFilter mf;
         private MeshRenderer mr;
         private PagedLODBehaviour behaviour;
@@ -44,13 +57,12 @@ namespace Unity3MXB
         public TileBoundingSphere BoundingSphere;
         public float MaxScreenDiameter;
 
-        public List<string> ChildrenFiles;
-        public int LoadedChildrenFilesCount;
+        public int LoadedChildrenFilesCount;        // TODO: delete in future, means Staged
+        private ChildrenStatus childrenStatus;      // pass to thread, atomic
+        public List<string> ChildrenFiles;          // pass to thread
+        public List<RawPagedLOD> StagedChildren;    // pass to thread
 
-        public List<RawPagedLOD> StagedChildren;
         public List<PagedLOD> CommitedChildren;
-
-        private ChildrenStatus childrenStatus;
 
         public int FrameNumberOfLastTraversal;
 
@@ -92,7 +104,7 @@ namespace Unity3MXB
             this.mr.material.SetTexture("_MainTex", texture);
         }
 
-        public void EnableRenderer(bool enabled)
+        private void EnableRenderer(bool enabled)
         {
             if (enabled != this.mr.enabled)
             {
@@ -106,6 +118,7 @@ namespace Unity3MXB
             this.Go.SetActive(true);
             foreach (PagedLOD pagedLOD in this.CommitedChildren)
             {
+                // TODO: recursively check every child's children's status to see if they are staging, if true, do NOT destory this child
                 pagedLOD.Go.SetActive(false);
                 pagedLOD.mr.material.SetTexture("_MainTex", null);
                 GameObject.Destroy(pagedLOD.Go);
