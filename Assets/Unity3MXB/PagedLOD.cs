@@ -4,14 +4,6 @@ using UnityEngine;
 
 namespace Unity3MXB
 {
-    enum PagedLODChildrenStatus
-    {
-        Unstaged = 0,   // StagedChildren.Count = 0         , CommitedChildren.Count = 0
-        Staging,        // StagedChildren.Count = Unknown   , CommitedChildren.Count = 0
-        Staged,         // StagedChildren.Count = Known     , CommitedChildren.Count = 0
-        Commited        // StagedChildren.Count = 0         , CommitedChildren.Count = Known
-    };
-
     public class PagedLODBehaviour : MonoBehaviour
     {
         
@@ -33,6 +25,14 @@ namespace Unity3MXB
 
     public class PagedLOD
     {
+        enum ChildrenStatus
+        {
+            Unstaged = 0,   // StagedChildren.Count = 0         , CommitedChildren.Count = 0
+            Staging,        // StagedChildren.Count = Unknown   , CommitedChildren.Count = 0
+            Staged,         // StagedChildren.Count = Known     , CommitedChildren.Count = 0
+            Commited        // StagedChildren.Count = 0         , CommitedChildren.Count = Known
+        };
+
         private string dir;
         private GameObject Go;
         private MeshFilter mf;
@@ -50,7 +50,7 @@ namespace Unity3MXB
         public List<RawPagedLOD> StagedChildren;
         public List<PagedLOD> CommitedChildren;
 
-        private bool LoadStarted;
+        private ChildrenStatus childrenStatus;
 
         public int FrameNumberOfLastTraversal;
 
@@ -72,8 +72,8 @@ namespace Unity3MXB
 
             this.CommitedChildren = new List<PagedLOD>();
             this.StagedChildren = new List<RawPagedLOD>();
+            this.childrenStatus = ChildrenStatus.Unstaged;
 
-            this.LoadStarted = false;
             this.FrameNumberOfLastTraversal = -1;
         }
 
@@ -112,7 +112,7 @@ namespace Unity3MXB
             }
             this.CommitedChildren.Clear();
             this.LoadedChildrenFilesCount = 0;
-            this.LoadStarted = false;
+            this.childrenStatus = ChildrenStatus.Unstaged;
         }
 
         public void Traverse(int frameCount, Vector4 pixelSizeVector, Plane[] planes, ref int loadCount)
@@ -155,13 +155,13 @@ namespace Unity3MXB
                 else
                 {
                     this.EnableRenderer(true);
-                    if (this.LoadStarted == false)
+                    if (this.childrenStatus == ChildrenStatus.Unstaged)
                     {
                         if (loadCount >= 5)
                         {
                             return;
                         }
-                        this.LoadStarted = true;
+                        this.childrenStatus = ChildrenStatus.Staging;
                         for (int j = 0; j < this.ChildrenFiles.Count; ++j)
                         {
                             loadCount++;
