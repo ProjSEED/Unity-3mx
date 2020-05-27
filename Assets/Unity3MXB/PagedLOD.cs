@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Unity3MXB
 {
-    public class PagedLODInfo : MonoBehaviour
+    public class PagedLODBehaviour : MonoBehaviour
     {
         
     }
@@ -14,7 +14,7 @@ namespace Unity3MXB
         private GameObject Go;
         private MeshFilter mf;
         private MeshRenderer mr;
-        private PagedLODInfo info;
+        private PagedLODBehaviour behaviour;
 
         public Vector3 BBMin;
         public Vector3 BBMax;
@@ -43,7 +43,7 @@ namespace Unity3MXB
 
             this.Go.transform.SetParent(parent, false);
             this.Go.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
-            this.info = this.Go.AddComponent<PagedLODInfo>();
+            this.behaviour = this.Go.AddComponent<PagedLODBehaviour>();
             this.mf = this.Go.AddComponent<MeshFilter>();
             this.mr = this.Go.AddComponent<MeshRenderer>();
             this.mr.enabled = false;
@@ -147,7 +147,7 @@ namespace Unity3MXB
                             loadCount++;
                             string file = this.Children[j];
                             Unity3MXBLoader loaderChild = new Unity3MXBLoader(dir, this);
-                            this.info.StartCoroutine(loaderChild.LoadStream(file));
+                            this.behaviour.StartCoroutine(loaderChild.LoadStream(file));
                         }
                     }
                 }
