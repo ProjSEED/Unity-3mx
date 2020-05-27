@@ -4,13 +4,36 @@ using UnityEngine;
 
 namespace Unity3MXB
 {
+    enum PagedLODChildrenStatus
+    {
+        Unstaged = 0,   // StagedChildren.Count = 0         , CommitedChildren.Count = 0
+        Staging,        // StagedChildren.Count = Unknown   , CommitedChildren.Count = 0
+        Staged,         // StagedChildren.Count = Known     , CommitedChildren.Count = 0
+        Commited        // StagedChildren.Count = 0         , CommitedChildren.Count = Known
+    };
+
     public class PagedLODBehaviour : MonoBehaviour
     {
         
     }
 
+    public class RawPagedLOD
+    {
+        // mesh
+        public List<Vector3> Vertices = new List<Vector3>();
+        public List<Vector2> UVList = new List<Vector2>();
+        public List<Vector3> Normals = new List<Vector3>();
+        public List<int> Triangles = new List<int>();
+        public Vector3 BBMin = new Vector3();
+        public Vector3 BBMax = new Vector3();
+
+        // texture
+        public List<byte> JpgData = new List<byte>();
+    }
+
     public class PagedLOD
     {
+        private string dir;
         private GameObject Go;
         private MeshFilter mf;
         private MeshRenderer mr;
@@ -21,40 +44,37 @@ namespace Unity3MXB
         public TileBoundingSphere BoundingSphere;
         public float MaxScreenDiameter;
 
-        // children filename
-        public List<string> Children;
+        public List<string> ChildrenFiles;
+        public int LoadedChildrenFilesCount;
 
-        // loaded children filename
-        public List<string> LoadedChildren { get; set; }
-        
-        // loaded children node id
-        public Dictionary<string, PagedLOD> LoadedChildNode { get; set; }
+        public List<RawPagedLOD> StagedChildren;
+        public List<PagedLOD> CommitedChildren;
 
-        private string dir;
+        private bool LoadStarted;
 
         public int FrameNumberOfLastTraversal;
 
-        private bool Loaded;
-
         public PagedLOD(string name, Transform parent, string dir)
         {
+            this.dir = dir;
+
             this.Go = new GameObject();
             this.Go.name = name;
-
             this.Go.transform.SetParent(parent, false);
             this.Go.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
+
             this.behaviour = this.Go.AddComponent<PagedLODBehaviour>();
             this.mf = this.Go.AddComponent<MeshFilter>();
             this.mr = this.Go.AddComponent<MeshRenderer>();
             this.mr.enabled = false;
 
+            this.LoadedChildrenFilesCount = 0;
+
+            this.CommitedChildren = new List<PagedLOD>();
+            this.StagedChildren = new List<RawPagedLOD>();
+
+            this.LoadStarted = false;
             this.FrameNumberOfLastTraversal = -1;
-            this.dir = dir;
-
-            this.LoadedChildNode = new Dictionary<string, PagedLOD>();
-            this.LoadedChildren = new List<string>();
-
-            this.Loaded = false;
         }
 
         public Transform GetTransform()
@@ -84,15 +104,15 @@ namespace Unity3MXB
         {
             this.Go.SetActive(false);
             this.Go.SetActive(true);
-            foreach (PagedLOD pagedLOD in this.LoadedChildNode.Values)
+            foreach (PagedLOD pagedLOD in this.CommitedChildren)
             {
                 pagedLOD.Go.SetActive(false);
                 pagedLOD.mr.material.SetTexture("_MainTex", null);
                 GameObject.Destroy(pagedLOD.Go);
             }
-            this.LoadedChildNode.Clear();
-            this.LoadedChildren.Clear();
-            this.Loaded = false;
+            this.CommitedChildren.Clear();
+            this.LoadedChildrenFilesCount = 0;
+            this.LoadStarted = false;
         }
 
         public void Traverse(int frameCount, Vector4 pixelSizeVector, Plane[] planes, ref int loadCount)
@@ -117,17 +137,17 @@ namespace Unity3MXB
 
             // traverse based on screenDiameter
             float screenDiameter = this.BoundingSphere.ScreenDiameter(pixelSizeVector);
-            if (screenDiameter < MaxScreenDiameter || this.Children.Count == 0)
+            if (screenDiameter < MaxScreenDiameter || this.ChildrenFiles.Count == 0)
             {
                 this.EnableRenderer(true);
                 this.UnloadChildren();
             }
             else
             {
-                if (this.LoadedChildren.Count == this.Children.Count)
+                if (this.LoadedChildrenFilesCount == this.ChildrenFiles.Count)
                 {
                     this.EnableRenderer(false);
-                    foreach (PagedLOD pagedLOD in this.LoadedChildNode.Values)
+                    foreach (PagedLOD pagedLOD in this.CommitedChildren)
                     {
                         pagedLOD.Traverse(Time.frameCount, pixelSizeVector, planes, ref loadCount);
                     }
@@ -135,17 +155,17 @@ namespace Unity3MXB
                 else
                 {
                     this.EnableRenderer(true);
-                    if (this.Loaded == false)
+                    if (this.LoadStarted == false)
                     {
                         if (loadCount >= 5)
                         {
                             return;
                         }
-                        this.Loaded = true;
-                        for (int j = 0; j < this.Children.Count; ++j)
+                        this.LoadStarted = true;
+                        for (int j = 0; j < this.ChildrenFiles.Count; ++j)
                         {
                             loadCount++;
-                            string file = this.Children[j];
+                            string file = this.ChildrenFiles[j];
                             Unity3MXBLoader loaderChild = new Unity3MXBLoader(dir, this);
                             this.behaviour.StartCoroutine(loaderChild.LoadStream(file));
                         }

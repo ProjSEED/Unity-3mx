@@ -221,7 +221,7 @@ namespace Unity3MXB
                         pagedLOD.BBMax = new Vector3(node.BBMax[0], node.BBMax[2], node.BBMax[1]);
                         pagedLOD.BoundingSphere = new TileBoundingSphere((pagedLOD.BBMax + pagedLOD.BBMin) / 2, (pagedLOD.BBMax - pagedLOD.BBMin).magnitude / 2);
                         pagedLOD.MaxScreenDiameter = node.MaxScreenDiameter;
-                        pagedLOD.Children = node.Children;
+                        pagedLOD.ChildrenFiles = node.Children;
 
                         for (int j = 0; j < node.Resources.Count; ++j)
                         {
@@ -243,15 +243,15 @@ namespace Unity3MXB
                                 }
                             }
                         }
-                        this.parent.LoadedChildNode.Add(node.Id, pagedLOD);
+                        this.parent.CommitedChildren.Add(pagedLOD);
                     }
 #if DEBUG_TIME
                     swNodes.Stop();
                     UnityEngine.Debug.Log(string.Format("Nodes: {0} ms", swNodes.ElapsedMilliseconds));
 #endif
-                    this.parent.LoadedChildren.Add(relativeFilePath);
                 }
             }
+            this.parent.LoadedChildrenFilesCount++;
             Dispose();
         }
     }

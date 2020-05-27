@@ -41,7 +41,7 @@ namespace Unity3MXB
                 Vector4 pixelSizeVector = computePixelSizeVector(cam.scaledPixelWidth, cam.scaledPixelHeight, cam.projectionMatrix, cam.worldToCameraMatrix * this.transform.localToWorldMatrix);
 
                 int loadCount = 0;
-                foreach (PagedLOD pagedLOD in this.Root.LoadedChildNode.Values)
+                foreach (PagedLOD pagedLOD in this.Root.CommitedChildren)
                 {
                     pagedLOD.Traverse(Time.frameCount, pixelSizeVector, planes, ref loadCount);
                 }
