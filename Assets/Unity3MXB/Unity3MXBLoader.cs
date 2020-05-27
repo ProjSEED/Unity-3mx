@@ -1,3 +1,5 @@
+//#define DEBUG_TIME
+
 using Newtonsoft.Json;
 using System;
 using System.Collections;
@@ -131,6 +133,11 @@ namespace Unity3MXB
                 // Using statment will ensure this.loader.LoadedStream is disposed
                 using (BinaryReader br = new BinaryReader(this.loader.LoadedStream))
                 {
+#if DEBUG_TIME
+                    System.Diagnostics.Stopwatch swHeader = new System.Diagnostics.Stopwatch();
+                    swHeader.Start();
+#endif
+
                     // Remove query parameters if there are any
                     string filename = relativeFilePath.Split('?')[0];
 			            const int magicNumberLen = 5;
@@ -152,28 +159,56 @@ namespace Unity3MXB
                     string headerJson = new String(br.ReadChars((int)headerSize));
                     Schema.Header3MXB header3MXB = JsonConvert.DeserializeObject<Schema.Header3MXB>(headerJson);
 
+#if DEBUG_TIME
+                    swHeader.Stop();
+                    UnityEngine.Debug.Log(string.Format("Header: {0} ms", swHeader.ElapsedMilliseconds));
+#endif
+#if DEBUG_TIME
+                    System.Diagnostics.Stopwatch swTexture = new System.Diagnostics.Stopwatch();
+
+                    System.Diagnostics.Stopwatch swGeometry = new System.Diagnostics.Stopwatch();
+#endif
                     // resources
-                    for(int i = 0; i < header3MXB.Resources.Count; ++i)
+                    for (int i = 0; i < header3MXB.Resources.Count; ++i)
                     {
+                        yield return null;
                         Schema.Resource resource = header3MXB.Resources[i];
 			            if (resource.Type == "textureBuffer" && resource.Format == "jpg")
                         {
+#if DEBUG_TIME
+                            swTexture.Start();
+#endif
                             ConstructImage(resource.Id, br, resource.Size);
+#if DEBUG_TIME
+                            swTexture.Stop();
+#endif
                         }
                         else if (resource.Type == "geometryBuffer" && resource.Format == "ctm")
                         {
+#if DEBUG_TIME
+                            swGeometry.Start();
+#endif
                             ConstructMesh(resource.Id, br, resource.Size, 
                                 new Vector3(resource.BBMin[0], resource.BBMin[2], resource.BBMin[1]),
                                 new Vector3(resource.BBMax[0], resource.BBMax[2], resource.BBMax[1]));
 
                             _meshTextureIdCache.Add(resource.Id, resource.Texture);
+#if DEBUG_TIME
+                            swGeometry.Stop();
+#endif
                         }
                         else
                         {
                             Debug.LogError("Unexpected buffer type in 3mxb file: " + relativeFilePath);
                         }
                     }
-
+#if DEBUG_TIME
+                    UnityEngine.Debug.Log(string.Format("Texture: {0} ms, Geometry: {1} ms", swTexture.ElapsedMilliseconds, swGeometry.ElapsedMilliseconds));
+#endif
+#if DEBUG_TIME
+                    System.Diagnostics.Stopwatch swNodes = new System.Diagnostics.Stopwatch();
+                    swNodes.Start();
+#endif
                     // nodes
                     for (int i = 0; i < header3MXB.Nodes.Count; ++i)
                     {
@@ -210,7 +245,10 @@ namespace Unity3MXB
                         }
                         this.parent.LoadedChildNode.Add(node.Id, pagedLOD);
                     }
-
+#if DEBUG_TIME
+                    swNodes.Stop();
+                    UnityEngine.Debug.Log(string.Format("Nodes: {0} ms", swNodes.ElapsedMilliseconds));
+#endif
                     this.parent.LoadedChildren.Add(relativeFilePath);
                 }
             }
