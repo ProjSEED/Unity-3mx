@@ -27,7 +27,7 @@ namespace Unity3MXB
             }
         }
 
-        public void LateUpdate()
+        public void Update()
         {
             if(this.Root != null)
             {
