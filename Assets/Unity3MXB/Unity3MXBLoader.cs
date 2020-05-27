@@ -228,19 +228,16 @@ namespace Unity3MXB
                             UnityEngine.Mesh um;
                             if(_meshCache.TryGetValue(node.Resources[j], out um))
                             {
-                                pagedLOD.SetMesh(um);
+                                Texture2D texture = null;
                                 string textureId;
-                                if(_meshTextureIdCache.TryGetValue(node.Resources[j], out textureId))
+                                if (_meshTextureIdCache.TryGetValue(node.Resources[j], out textureId))
                                 {
                                     if(textureId != null)
                                     {
-                                        Texture2D texture;
-                                        if (_textureCache.TryGetValue(textureId, out texture))
-                                        {
-                                            pagedLOD.SetTexture(texture);
-                                        }
+                                        _textureCache.TryGetValue(textureId, out texture);
                                     }
                                 }
+                                pagedLOD.AddMeshTexture(um, texture);
                             }
                         }
                         this.parent.CommitedChildren.Add(pagedLOD);

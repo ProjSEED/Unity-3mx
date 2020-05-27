@@ -47,9 +47,7 @@ namespace Unity3MXB
         };
 
         private string dir;
-        private GameObject Go;  // TODO: one node could contains more than one mesh, use GameObject as a group, insert each mesh to a child GameObject
-        private MeshFilter mf;
-        private MeshRenderer mr;
+        private GameObject Go;  // one node could contains more than one mesh, use this GameObject as a group, insert each mesh to a child GameObject
         private PagedLODBehaviour behaviour;
 
         public Vector3 BBMin;
@@ -76,15 +74,12 @@ namespace Unity3MXB
             this.Go.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
 
             this.behaviour = this.Go.AddComponent<PagedLODBehaviour>();
-            this.mf = this.Go.AddComponent<MeshFilter>();
-            this.mr = this.Go.AddComponent<MeshRenderer>();
-            this.mr.enabled = false;
 
             this.LoadedChildrenFilesCount = 0;
+            this.childrenStatus = ChildrenStatus.Unstaged;
+            this.StagedChildren = new List<RawPagedLOD>();
 
             this.CommitedChildren = new List<PagedLOD>();
-            this.StagedChildren = new List<RawPagedLOD>();
-            this.childrenStatus = ChildrenStatus.Unstaged;
 
             this.FrameNumberOfLastTraversal = -1;
         }
@@ -94,21 +89,26 @@ namespace Unity3MXB
             return this.Go.transform;
         }
 
-        public void SetMesh(Mesh mesh)
+        public void AddMeshTexture(Mesh mesh, Texture2D texture)
         {
-            this.mf.mesh = mesh;
-        }
-
-        public void SetTexture(Texture2D texture)
-        {
-            this.mr.material.SetTexture("_MainTex", texture);
+            GameObject goSingleMesh = new GameObject();
+            goSingleMesh.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
+            goSingleMesh.transform.SetParent(this.Go.transform);
+            MeshFilter mf = goSingleMesh.AddComponent<MeshFilter>();
+            MeshRenderer mr = goSingleMesh.AddComponent<MeshRenderer>();
+            mr.enabled = false;
+            mf.mesh = mesh;
+            mr.material.SetTexture("_MainTex", texture);
         }
 
         private void EnableRenderer(bool enabled)
         {
-            if (enabled != this.mr.enabled)
+            foreach(MeshRenderer mr in this.Go.GetComponentsInChildren<MeshRenderer>())
             {
-                this.mr.enabled = enabled;
+                if(enabled != mr.enabled)
+                {
+                    mr.enabled = enabled;
+                }
             }
         }
 
@@ -120,7 +120,10 @@ namespace Unity3MXB
             {
                 // TODO: recursively check every child's children's status to see if they are staging, if true, do NOT destory this child
                 pagedLOD.Go.SetActive(false);
-                pagedLOD.mr.material.SetTexture("_MainTex", null);
+                foreach (MeshRenderer mr in pagedLOD.Go.GetComponentsInChildren<MeshRenderer>())
+                {
+                    mr.material.SetTexture("_MainTex", null);
+                }
                 GameObject.Destroy(pagedLOD.Go);
             }
             this.CommitedChildren.Clear();
