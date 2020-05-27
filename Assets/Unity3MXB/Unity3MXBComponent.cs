@@ -40,9 +40,14 @@ namespace Unity3MXB
                 Plane[] planes = GeometryUtility.CalculateFrustumPlanes(cameraMatrix);
                 Vector4 pixelSizeVector = computePixelSizeVector(cam.scaledPixelWidth, cam.scaledPixelHeight, cam.projectionMatrix, cam.worldToCameraMatrix * this.transform.localToWorldMatrix);
 
+                int loadCount = 0;
                 foreach (PagedLOD pagedLOD in this.Root.LoadedChildNode.Values)
                 {
-                    pagedLOD.Traverse(Time.frameCount, pixelSizeVector, planes);
+                    pagedLOD.Traverse(Time.frameCount, pixelSizeVector, planes, ref loadCount);
+                }
+                if(loadCount > 0)
+                {
+                    UnityEngine.Debug.Log(string.Format("Need to load {0} files", loadCount));
                 }
                 Resources.UnloadUnusedAssets();
             }

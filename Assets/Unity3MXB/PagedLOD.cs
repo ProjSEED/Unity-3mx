@@ -21,8 +21,13 @@ namespace Unity3MXB
         public TileBoundingSphere BoundingSphere;
         public float MaxScreenDiameter;
 
+        // children filename
         public List<string> Children;
+
+        // loaded children filename
         public List<string> LoadedChildren { get; set; }
+        
+        // loaded children node id
         public Dictionary<string, PagedLOD> LoadedChildNode { get; set; }
 
         private string dir;
@@ -90,7 +95,7 @@ namespace Unity3MXB
             this.Loaded = false;
         }
 
-        public void Traverse(int frameCount, Vector4 pixelSizeVector, Plane[] planes)
+        public void Traverse(int frameCount, Vector4 pixelSizeVector, Plane[] planes, ref int loadCount)
         {
             // TODO: add cache
             this.FrameNumberOfLastTraversal = frameCount;
@@ -124,7 +129,7 @@ namespace Unity3MXB
                     this.EnableRenderer(false);
                     foreach (PagedLOD pagedLOD in this.LoadedChildNode.Values)
                     {
-                        pagedLOD.Traverse(Time.frameCount, pixelSizeVector, planes);
+                        pagedLOD.Traverse(Time.frameCount, pixelSizeVector, planes, ref loadCount);
                     }
                 }
                 else
@@ -132,9 +137,14 @@ namespace Unity3MXB
                     this.EnableRenderer(true);
                     if (this.Loaded == false)
                     {
+                        if (loadCount >= 5)
+                        {
+                            return;
+                        }
                         this.Loaded = true;
                         for (int j = 0; j < this.Children.Count; ++j)
                         {
+                            loadCount++;
                             string file = this.Children[j];
                             Unity3MXBLoader loaderChild = new Unity3MXBLoader(dir, this);
                             this.info.StartCoroutine(loaderChild.LoadStream(file));
