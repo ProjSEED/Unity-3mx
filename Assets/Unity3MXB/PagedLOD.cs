@@ -93,7 +93,7 @@ namespace Unity3MXB
             {
                 GameObject goSingleMesh = new GameObject();
                 goSingleMesh.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
-                goSingleMesh.transform.SetParent(this.Go.transform);
+                goSingleMesh.transform.SetParent(this.Go.transform, false);
                 
                 UnityEngine.Mesh um = new UnityEngine.Mesh();
                 um.vertices = rawMesh.Mesh.Vertices.ToArray();
