@@ -207,28 +207,6 @@ namespace Unity3MXB
         public void Traverse(int frameCount, Vector4 pixelSizeVector, Plane[] planes, ref int loadCount)
         {
             this.FrameNumberOfLastTraversal = frameCount;
-            // commit
-            if (this.childrenStatus == ChildrenStatus.Staged)
-            {
-                if(loadCount >= 5) // TODO: export 5 as a global option
-                {
-                    return;
-                }
-                foreach (RawPagedLOD stagedChild in this.StagedChildren)
-                {
-                    PagedLOD commitedChild = new PagedLOD(stagedChild.id, this.Go.transform, stagedChild.dir);
-                    commitedChild.BBMin = stagedChild.BBMin;
-                    commitedChild.BBMax = stagedChild.BBMax;
-                    commitedChild.BoundingSphere = stagedChild.BoundingSphere;
-                    commitedChild.MaxScreenDiameter = stagedChild.MaxScreenDiameter;
-                    commitedChild.ChildrenFiles = stagedChild.ChildrenFiles;
-                    commitedChild.AddMeshTexture(stagedChild.TexMeshs);
-                    this.CommitedChildren.Add(commitedChild);
-                }
-                this.StagedChildren.Clear();
-                this.childrenStatus = ChildrenStatus.Commited;
-                ++loadCount;
-            }
 
             // TODO: add cache
 
@@ -256,9 +234,32 @@ namespace Unity3MXB
             }
             else
             {
+                // commit
+                if (this.childrenStatus == ChildrenStatus.Staged)
+                {
+                    if (loadCount >= 5) // TODO: export 5 as a global option
+                    {
+                        return;
+                    }
+                    foreach (RawPagedLOD stagedChild in this.StagedChildren)
+                    {
+                        PagedLOD commitedChild = new PagedLOD(stagedChild.id, this.Go.transform, stagedChild.dir);
+                        commitedChild.BBMin = stagedChild.BBMin;
+                        commitedChild.BBMax = stagedChild.BBMax;
+                        commitedChild.BoundingSphere = stagedChild.BoundingSphere;
+                        commitedChild.MaxScreenDiameter = stagedChild.MaxScreenDiameter;
+                        commitedChild.ChildrenFiles = stagedChild.ChildrenFiles;
+                        commitedChild.AddMeshTexture(stagedChild.TexMeshs);
+                        this.CommitedChildren.Add(commitedChild);
+                    }
+                    this.StagedChildren.Clear();
+                    this.childrenStatus = ChildrenStatus.Commited;
+                    ++loadCount;
+                }
+                // commited
                 if (this.childrenStatus == ChildrenStatus.Commited)
                 {
-                        this.EnableRenderer(false);
+                    this.EnableRenderer(false);
                     foreach (PagedLOD pagedLOD in this.CommitedChildren)
                     {
                         pagedLOD.Traverse(Time.frameCount, pixelSizeVector, planes, ref loadCount);
