@@ -17,14 +17,14 @@ namespace Unity3MXB.Loader
 			_rootFolder = rootFolder;
 		}
 
-		public IEnumerator LoadStream(string inputFilePath)
+		public void LoadStream(string inputFilePath)
 		{
 			if (inputFilePath == null)
 			{
 				throw new ArgumentNullException("inputFilePath");
 			}
-			
-			yield return LoadStorageFile(inputFilePath).AsCoroutine();
+
+			LoadStorageFile(inputFilePath).RunSynchronously();
 		}
 
 		public async Task LoadStorageFile(string path)

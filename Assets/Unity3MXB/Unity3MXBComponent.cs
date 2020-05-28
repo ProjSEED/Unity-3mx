@@ -41,14 +41,12 @@ namespace Unity3MXB
                 Vector4 pixelSizeVector = computePixelSizeVector(cam.scaledPixelWidth, cam.scaledPixelHeight, cam.projectionMatrix, cam.worldToCameraMatrix * this.transform.localToWorldMatrix);
 
                 int loadCount = 0;
-                foreach (PagedLOD pagedLOD in this.Root.CommitedChildren)
-                {
-                    pagedLOD.Traverse(Time.frameCount, pixelSizeVector, planes, ref loadCount);
-                }
-                if(loadCount > 0)
-                {
-                    UnityEngine.Debug.Log(string.Format("Need to load {0} files", loadCount));
-                }
+                this.Root.Traverse(Time.frameCount, pixelSizeVector, planes, ref loadCount);
+
+                //if(loadCount > 0)
+                //{
+                //    UnityEngine.Debug.Log(string.Format("Need to load {0} files", loadCount));
+                //}
                 Resources.UnloadUnusedAssets();
             }
         }
@@ -91,14 +89,17 @@ namespace Unity3MXB
         {
             string url = UrlUtils.ReplaceDataProtocol(Url);
             string dir = UrlUtils.GetBaseUri(url);
+
             string file = UrlUtils.GetLastPathSegment(url);
 
             if (file.EndsWith(".3mxb", StringComparison.OrdinalIgnoreCase))
             {
-                this.Root = new PagedLOD(file, this.transform, dir);
-
-                Unity3MXBLoader loader = new Unity3MXBLoader(dir, this.Root);
-                yield return loader.LoadStream(file);
+                this.Root = new PagedLOD("root", this.transform, dir);
+                this.Root.MaxScreenDiameter = 0;
+                this.Root.BoundingSphere = new TileBoundingSphere(new Vector3(0, 0, 0), 1e30f);
+                this.Root.ChildrenFiles = new List<string>();
+                this.Root.ChildrenFiles.Add(file);
+                yield return null;
             }         
         }
     }

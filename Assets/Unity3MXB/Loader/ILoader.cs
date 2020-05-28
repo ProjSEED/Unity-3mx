@@ -8,7 +8,7 @@ namespace Unity3MXB.Loader
 {
 	public interface ILoader
 	{
-		IEnumerator LoadStream(string relativeFilePath);
+		void LoadStream(string relativeFilePath);
 
 		Stream LoadedStream { get; }
 	}

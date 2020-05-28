@@ -19,25 +19,23 @@ namespace Unity3MXB.Loader
 			_rootDirectoryPath = rootDirectoryPath;
 		}
 
-		public IEnumerator LoadStream(string inputFilePath)
+		public void LoadStream(string inputFilePath)
 		{
 			if (inputFilePath == null)
 			{
 				throw new ArgumentNullException("inputFilePath");
 			}
 
-			yield return LoadFileStream(_rootDirectoryPath, inputFilePath);
+			LoadFileStream(_rootDirectoryPath, inputFilePath);
 		}
 
-		private IEnumerator LoadFileStream(string rootPath, string fileToLoad)
+		private void LoadFileStream(string rootPath, string fileToLoad)
 		{
 			string pathToLoad = Path.Combine(rootPath, fileToLoad);
 			if (!File.Exists(pathToLoad))
 			{
 				throw new FileNotFoundException("Buffer file not found", fileToLoad);
 			}
-
-			yield return null;
 			LoadedStream = File.OpenRead(pathToLoad);
 		}
 	}
