@@ -237,6 +237,7 @@ namespace Unity3MXB
                 // commit
                 if (this.childrenStatus == ChildrenStatus.Staged)
                 {
+                    this.EnableRenderer(true);
                     if (loadCount >= 5) // TODO: export 5 as a global option
                     {
                         return;
