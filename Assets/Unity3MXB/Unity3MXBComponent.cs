@@ -31,17 +31,24 @@ namespace Unity3MXB
         {
             if(this.Root != null)
             {
-                // TODO: support multi camera
-                Camera cam = Camera.main;
+                // TODO: support to set cameras
+                List<CamState> camStates = new List<CamState>();
+                List<Camera> cams = UnityEditor.SceneView.GetAllSceneCameras().ToList();
+                cams.Add(Camera.main);
+                foreach(Camera cam in cams)
+                {
+                    CamState camState = new CamState();
+                    Matrix4x4 cameraMatrix = cam.projectionMatrix * cam.worldToCameraMatrix * this.transform.localToWorldMatrix;
+                    camState.planes = GeometryUtility.CalculateFrustumPlanes(cameraMatrix);
+                    camState.pixelSizeVector = computePixelSizeVector(cam.scaledPixelWidth, cam.scaledPixelHeight, cam.projectionMatrix, cam.worldToCameraMatrix * this.transform.localToWorldMatrix);
+                    camStates.Add(camState);
+                }
 
                 // All of our bounding boxes and tiles are using tileset coordinate frame so lets get our frustrum planes
                 // in tileset frame.  This way we only need to transform our planes, not every bounding box we need to check against
-                Matrix4x4 cameraMatrix = cam.projectionMatrix * cam.worldToCameraMatrix * this.transform.localToWorldMatrix;
-                Plane[] planes = GeometryUtility.CalculateFrustumPlanes(cameraMatrix);
-                Vector4 pixelSizeVector = computePixelSizeVector(cam.scaledPixelWidth, cam.scaledPixelHeight, cam.projectionMatrix, cam.worldToCameraMatrix * this.transform.localToWorldMatrix);
 
                 int loadCount = 0;
-                this.Root.Traverse(Time.frameCount, pixelSizeVector, planes, ref loadCount);
+                this.Root.Traverse(Time.frameCount, camStates.ToArray(), ref loadCount);
 
                 //if(loadCount > 0)
                 //{

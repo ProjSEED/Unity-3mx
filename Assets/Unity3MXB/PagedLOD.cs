@@ -42,6 +42,12 @@ namespace Unity3MXB
         public List<RawTexMesh> TexMeshs = new List<RawTexMesh>();
     }
 
+    public class CamState
+    {
+        public Vector4 pixelSizeVector;
+        public Plane[] planes;
+    }
+
     public class PagedLOD
     {
         public enum ChildrenStatus
@@ -136,6 +142,7 @@ namespace Unity3MXB
 
         private void EnableRenderer(bool enabled)
         {
+            // TODO: support change material
             foreach(MeshRenderer mr in this.Go.GetComponentsInChildren<MeshRenderer>())
             {
                 if(enabled != mr.enabled)
@@ -204,8 +211,12 @@ namespace Unity3MXB
             }
         }
 
-        public void Traverse(int frameCount, Vector4 pixelSizeVector, Plane[] planes, ref int loadCount)
+        public void Traverse(int frameCount, CamState[] camStates, ref int loadCount)
         {
+            if(camStates.Length == 0)
+            {
+                return;
+            }
             this.FrameNumberOfLastTraversal = frameCount;
 
             // TODO: add cache
@@ -217,8 +228,18 @@ namespace Unity3MXB
             // TODO: optimize run speed
 
             // cull by bounding sphere
-            PlaneClipMask mask = this.BoundingSphere.IntersectPlanes(planes, PlaneClipMask.GetDefaultMask());
-            if (mask.Intersection == IntersectionType.OUTSIDE)
+            bool isInSide = false;
+            float screenDiameter = 0;
+            foreach (CamState camState in camStates)
+            {
+                PlaneClipMask mask = this.BoundingSphere.IntersectPlanes(camState.planes, PlaneClipMask.GetDefaultMask());
+                if (mask.Intersection != IntersectionType.OUTSIDE)
+                {
+                    isInSide = true;
+                    screenDiameter = Mathf.Max(screenDiameter, this.BoundingSphere.ScreenDiameter(camState.pixelSizeVector));
+                }
+            }
+            if (isInSide == false)
             {
                 this.EnableRenderer(false);
                 this.UnloadChildren();
@@ -226,7 +247,6 @@ namespace Unity3MXB
             }
 
             // traverse based on screenDiameter
-            float screenDiameter = this.BoundingSphere.ScreenDiameter(pixelSizeVector);
             if (screenDiameter < MaxScreenDiameter || this.ChildrenFiles.Count == 0)
             {
                 this.EnableRenderer(true);
@@ -263,7 +283,7 @@ namespace Unity3MXB
                     this.EnableRenderer(false);
                     foreach (PagedLOD pagedLOD in this.CommitedChildren)
                     {
-                        pagedLOD.Traverse(Time.frameCount, pixelSizeVector, planes, ref loadCount);
+                        pagedLOD.Traverse(Time.frameCount, camStates, ref loadCount);
                     }
                 }
                 else
