@@ -187,11 +187,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Url: http://localhost/Production_2.3mxb
-  Multithreaded: 1
   MaximumLod: 300
   ShaderOverride: {fileID: 0}
   AddColliders: 0
-  DownloadOnStart: 1
+  ReceiveShadows: 1
 --- !u!1 &993157203
 GameObject:
   m_ObjectHideFlags: 0
@@ -273,6 +272,8 @@ GameObject:
   - component: {fileID: 1438352746}
   - component: {fileID: 1438352745}
   - component: {fileID: 1438352744}
+  - component: {fileID: 1438352748}
+  - component: {fileID: 1438352749}
   m_Layer: 0
   m_Name: Camera
   m_TagString: MainCamera
@@ -346,9 +347,39 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1438352743}
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 100, z: 0}
+  m_LocalPosition: {x: 0, y: 50, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
+--- !u!114 &1438352748
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1438352743}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1385a156af4cc442bbb9c1a8b416971, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Target: {fileID: 947725857}
+  Distance: 20
+  isNeedDamping: 1
+  Damping: 10
+--- !u!114 &1438352749
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1438352743}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf4b6a54cda953f45a85c73b63335b03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fpsTarget: -1
+  updateInterval: 0.5
