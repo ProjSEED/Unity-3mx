@@ -59,10 +59,6 @@ namespace Unity3MXB
                     texture.Height = nanoJPEG.njGetHeight();
                     _rawTextureCache.Add(id, texture);
                 }
-                else
-                {
-                    _rawTextureCache.Add(id, null);
-                }
             }
         }
 
@@ -83,7 +79,7 @@ namespace Unity3MXB
                     List<Vector3> Vertices = new List<Vector3>();
                     for (int j = 0; j < mesh.getVertexCount(); j++)
                         Vertices.Add(new Vector3(mesh.vertices[(j * 3)], mesh.vertices[(j * 3) + 2], mesh.vertices[(j * 3) + 1]));
-                    rawMesh.Vertices = Vertices;
+                    rawMesh.Vertices = Vertices.ToArray();
                 }
 
                 {
@@ -94,24 +90,24 @@ namespace Unity3MXB
                         Triangles.Add(mesh.indices[(j * 3) + 2]);
                         Triangles.Add(mesh.indices[(j * 3) + 1]);
                     }
-                    rawMesh.Triangles = Triangles;
-                }
+                    rawMesh.Triangles = Triangles.ToArray();
+                    }
 
                 if (mesh.getUVCount() > 0)
                 {
                     List<Vector2> UVList = new List<Vector2>();
                     for (int j = 0; j < mesh.texcoordinates[0].values.Length / 2; j++)
                         UVList.Add(new Vector2(mesh.texcoordinates[0].values[(j * 2)], 1 - mesh.texcoordinates[0].values[(j * 2) + 1]));
-                    rawMesh.UVList = UVList;
-                }
+                    rawMesh.UVList = UVList.ToArray();
+                    }
 
                 if (mesh.hasNormals())
                 {
                     List<Vector3> Normals = new List<Vector3>();
                     for (int j = 0; j < mesh.getVertexCount(); j++)
                         Normals.Add(new Vector3(mesh.normals[(j * 3)], mesh.normals[(j * 3) + 2], mesh.normals[(j * 3) + 1]));
-                    rawMesh.Normals = Normals;
-                }
+                    rawMesh.Normals = Normals.ToArray();
+                    }
                 rawMesh.BBMin = bbMin;
                 rawMesh.BBMax = bbMax;
 
@@ -225,18 +221,19 @@ namespace Unity3MXB
                                 RawTexMesh texMesh = new RawTexMesh();
                                 texMesh.Mesh = mesh;
 
-                                RawTexture texture = null;
+                                RawTexture texture;
+                                texture.Width = 0;
+                                texture.Height = 0;
+                                texture.ImgData = null;
                                 string textureId;
                                 if (_meshTextureIdCache.TryGetValue(node.Resources[j], out textureId))
                                 {
                                     if (textureId != null)
                                     {
-                                        if(_rawTextureCache.TryGetValue(textureId, out texture))
-                                        {
-                                            texMesh.Texture = texture;
-                                        }
+                                        _rawTextureCache.TryGetValue(textureId, out texture);
                                     }
                                 }
+                                texMesh.Texture = texture;
                                 rawPagedLOD.TexMeshs.Add(texMesh);
                             }
                         }

@@ -4,24 +4,24 @@ using UnityEngine;
 
 namespace Unity3MXB
 {
-    public class RawMesh
+    public struct RawMesh
     {
-        public List<Vector3> Vertices;
-        public List<Vector2> UVList;
-        public List<Vector3> Normals;
-        public List<int> Triangles;
+        public Vector3[] Vertices;
+        public Vector2[] UVList;
+        public Vector3[] Normals;
+        public int[] Triangles;
         public Vector3 BBMin;
         public Vector3 BBMax;
     }
 
-    public class RawTexture
+    public struct RawTexture
     {
         public int Width;
         public int Height;
         public byte[] ImgData;
     }
 
-    public class RawTexMesh
+    public struct RawTexMesh
     {
         public RawMesh Mesh;
         public RawTexture Texture;
@@ -57,6 +57,8 @@ namespace Unity3MXB
             Staged,         // StagedChildren.Count = Known     , CommitedChildren.Count = 0
             Commited        // StagedChildren.Count = 0         , CommitedChildren.Count = Known
         };
+
+        public Unity3MXBComponent unity3MXBComponent = null;
 
         private string dir;
         private GameObject Go;  // one node could contains more than one mesh, use this GameObject as a group, insert each mesh to a child GameObject
@@ -102,15 +104,15 @@ namespace Unity3MXB
                 goSingleMesh.transform.SetParent(this.Go.transform, false);
                 
                 UnityEngine.Mesh um = new UnityEngine.Mesh();
-                um.vertices = rawMesh.Mesh.Vertices.ToArray();
-                um.triangles = rawMesh.Mesh.Triangles.ToArray();
+                um.vertices = rawMesh.Mesh.Vertices;
+                um.triangles = rawMesh.Mesh.Triangles;
                 if(rawMesh.Mesh.UVList != null)
                 {
-                    um.uv = rawMesh.Mesh.UVList.ToArray();
+                    um.uv = rawMesh.Mesh.UVList;
                 }
                 if (rawMesh.Mesh.Normals != null)
                 {
-                    um.normals = rawMesh.Mesh.Normals.ToArray();
+                    um.normals = rawMesh.Mesh.Normals;
                 }
                 else
                 {
@@ -123,7 +125,7 @@ namespace Unity3MXB
                 
                 MeshRenderer mr = goSingleMesh.AddComponent<MeshRenderer>();
                 mr.enabled = false;
-                if(rawMesh.Texture != null)
+                if(rawMesh.Texture.ImgData != null)
                 {
                     Texture2D texture;
                     texture = new Texture2D(rawMesh.Texture.Width, rawMesh.Texture.Height, TextureFormat.RGB24, false);
@@ -132,7 +134,6 @@ namespace Unity3MXB
                     texture.wrapMode = TextureWrapMode.Repeat;
                     // After we conduct the Apply(), then we can make the texture non-readable and never create a CPU copy
                     texture.Apply(true, true);
-
                     mr.material.SetTexture("_MainTex", texture);
                 }
             }
@@ -142,13 +143,31 @@ namespace Unity3MXB
 
         private void EnableRenderer(bool enabled)
         {
-            // TODO: support change material
             foreach(MeshRenderer mr in this.Go.GetComponentsInChildren<MeshRenderer>())
             {
                 if(enabled != mr.enabled)
                 {
                     mr.enabled = enabled;
                 }
+                if(mr.enabled == true)
+                {
+                    if ((this.unity3MXBComponent.ShaderOverride != null) && (mr.material.shader != this.unity3MXBComponent.ShaderOverride))
+                    {
+                        mr.material.shader = this.unity3MXBComponent.ShaderOverride;
+                    }
+                    if(mr.receiveShadows != this.unity3MXBComponent.ReceiveShadows)
+                    {
+                        mr.receiveShadows = this.unity3MXBComponent.ReceiveShadows;
+                    }
+                }
+                //if(this.unity3MXBComponent.AddColliders)
+                //{
+                //    if(mr.gameObject.GetComponents<MeshCollider>() == null)
+                //    {
+                //        var collider = mr.gameObject.AddComponent<MeshCollider>();
+                //        collider.sharedMesh = mesh;
+                //    }
+                //}
             }
         }
 
@@ -189,10 +208,6 @@ namespace Unity3MXB
             
             foreach (PagedLOD child in this.CommitedChildren)
             {
-                foreach (MeshRenderer mr in child.Go.GetComponentsInChildren<MeshRenderer>())
-                {
-                    mr.material.SetTexture("_MainTex", null);
-                }
                 GameObject.Destroy(child.Go);
             }
             this.CommitedChildren.Clear();
@@ -220,8 +235,6 @@ namespace Unity3MXB
             this.FrameNumberOfLastTraversal = frameCount;
 
             // TODO: add cache
-
-            // TODO: add shadow
 
             // TODO: add collider
 
@@ -265,6 +278,7 @@ namespace Unity3MXB
                     foreach (RawPagedLOD stagedChild in this.StagedChildren)
                     {
                         PagedLOD commitedChild = new PagedLOD(stagedChild.id, this.Go.transform, stagedChild.dir);
+                        commitedChild.unity3MXBComponent = this.unity3MXBComponent;
                         commitedChild.BBMin = stagedChild.BBMin;
                         commitedChild.BBMax = stagedChild.BBMax;
                         commitedChild.BoundingSphere = stagedChild.BoundingSphere;

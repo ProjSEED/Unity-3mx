@@ -8,23 +8,23 @@ using RSG;
 
 namespace Unity3MXB
 {
-    class Unity3MXBComponent : MonoBehaviour
+    public class Unity3MXBComponent : MonoBehaviour
     {
         public string Url;
-        public bool Multithreaded = true;
-        public int MaximumLod = 300;
+        public int MaximumLod = 300; // TODO: unused
         public Shader ShaderOverride = null;
-        public bool AddColliders = false;
-        public bool DownloadOnStart = true;
+        public bool AddColliders = false; // TODO: unused
+        public bool ReceiveShadows = true;
+
+        private float timeSinceLastCalled;
+
+        private float delay = 1f;
 
         PagedLOD Root;
 
         public void Start()
         {
-            if (DownloadOnStart)
-            {
-                StartCoroutine(Download(null));
-            }
+            StartCoroutine(Download(null));
         }
 
         public void Update()
@@ -33,7 +33,11 @@ namespace Unity3MXB
             {
                 // TODO: support to set cameras
                 List<CamState> camStates = new List<CamState>();
+#if UNITY_EDITOR
                 List<Camera> cams = UnityEditor.SceneView.GetAllSceneCameras().ToList();
+#else
+                List<Camera> cams = new List<Camera>();
+#endif
                 cams.Add(Camera.main);
                 foreach(Camera cam in cams)
                 {
@@ -46,7 +50,6 @@ namespace Unity3MXB
 
                 // All of our bounding boxes and tiles are using tileset coordinate frame so lets get our frustrum planes
                 // in tileset frame.  This way we only need to transform our planes, not every bounding box we need to check against
-
                 int loadCount = 0;
                 this.Root.Traverse(Time.frameCount, camStates.ToArray(), ref loadCount);
 
@@ -54,7 +57,13 @@ namespace Unity3MXB
                 //{
                 //    UnityEngine.Debug.Log(string.Format("Need to load {0} files", loadCount));
                 //}
-                Resources.UnloadUnusedAssets();
+
+                timeSinceLastCalled += Time.deltaTime;
+                if (timeSinceLastCalled > delay)
+                {
+                    timeSinceLastCalled = 0f;
+                    Resources.UnloadUnusedAssets();
+                }
             }
         }
 
@@ -102,6 +111,7 @@ namespace Unity3MXB
             if (file.EndsWith(".3mxb", StringComparison.OrdinalIgnoreCase))
             {
                 this.Root = new PagedLOD("root", this.transform, dir);
+                this.Root.unity3MXBComponent = this;
                 this.Root.MaxScreenDiameter = 0;
                 this.Root.BoundingSphere = new TileBoundingSphere(new Vector3(0, 0, 0), 1e30f);
                 this.Root.ChildrenFiles = new List<string>();
