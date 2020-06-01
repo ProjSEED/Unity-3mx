@@ -13,7 +13,7 @@ namespace Unity3MXB
         public string Url;
         public int MaximumLod = 300; // TODO: unused
         public Shader ShaderOverride = null;
-        public bool AddColliders = false; // TODO: unused
+        public bool AddColliders = false;
         public bool ReceiveShadows = true;
 
         private float timeSinceLastCalled;

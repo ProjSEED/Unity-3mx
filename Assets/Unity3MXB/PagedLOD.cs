@@ -62,6 +62,7 @@ namespace Unity3MXB
 
         private string dir;
         private GameObject Go;  // one node could contains more than one mesh, use this GameObject as a group, insert each mesh to a child GameObject
+        private bool HasColliders = false; 
 
         public Vector3 BBMin;
         public Vector3 BBMax;
@@ -160,14 +161,24 @@ namespace Unity3MXB
                         mr.receiveShadows = this.unity3MXBComponent.ReceiveShadows;
                     }
                 }
-                //if(this.unity3MXBComponent.AddColliders)
-                //{
-                //    if(mr.gameObject.GetComponents<MeshCollider>() == null)
-                //    {
-                //        var collider = mr.gameObject.AddComponent<MeshCollider>();
-                //        collider.sharedMesh = mesh;
-                //    }
-                //}
+                if (this.unity3MXBComponent.AddColliders)
+                {
+                    if(this.HasColliders == false)
+                    {
+                        MeshCollider collider = mr.gameObject.AddComponent<MeshCollider>();
+                        collider.sharedMesh = mr.gameObject.GetComponent<MeshFilter>().mesh;
+                        this.HasColliders = true;
+                    }
+                }
+                else
+                {
+                    if(this.HasColliders)
+                    {
+                        MeshCollider collider = mr.gameObject.GetComponent<MeshCollider>();
+                        GameObject.Destroy(mr.gameObject.GetComponent<MeshCollider>());
+                        this.HasColliders = false;
+                    }
+                }
             }
         }
 
@@ -235,8 +246,6 @@ namespace Unity3MXB
             this.FrameNumberOfLastTraversal = frameCount;
 
             // TODO: add cache
-
-            // TODO: add collider
 
             // TODO: optimize run speed
 
