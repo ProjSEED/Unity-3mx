@@ -11,7 +11,7 @@ namespace Unity3MXB
     public class Unity3MXBComponent : MonoBehaviour
     {
         public string Url;
-        public int MaximumLod = 300; // TODO: unused
+        public int MaximumLod = 1000;
         public Shader ShaderOverride = null;
         public bool AddColliders = false;
         public bool ReceiveShadows = true;
@@ -22,8 +22,34 @@ namespace Unity3MXB
 
         PagedLOD Root;
 
+        private List<CamState> camStates;
+
+        private List<Camera> cams;
+
+        public LRUCache<PagedLOD> LRUCache = new LRUCache<PagedLOD>();
+
+        private int stagingCount = 0;
+
         public void Start()
         {
+            // TODO: support to set cameras
+            camStates = new List<CamState>();
+#if UNITY_EDITOR
+            cams = UnityEditor.SceneView.GetAllSceneCameras().ToList();
+#else
+            cams = new List<Camera>();
+#endif
+            cams.Add(Camera.main);
+            foreach (Camera cam in cams)
+            {
+                CamState camState = new CamState();
+                Matrix4x4 cameraMatrix = cam.projectionMatrix * cam.worldToCameraMatrix * this.transform.localToWorldMatrix;
+                camState.planes = GeometryUtility.CalculateFrustumPlanes(cameraMatrix);
+                camState.pixelSizeVector = computePixelSizeVector(cam.scaledPixelWidth, cam.scaledPixelHeight, cam.projectionMatrix, cam.worldToCameraMatrix * this.transform.localToWorldMatrix);
+                camStates.Add(camState);
+            }
+
+            // Download
             StartCoroutine(Download(null));
         }
 
@@ -31,39 +57,35 @@ namespace Unity3MXB
         {
             if(this.Root != null)
             {
-                // TODO: support to set cameras
-                List<CamState> camStates = new List<CamState>();
-#if UNITY_EDITOR
-                List<Camera> cams = UnityEditor.SceneView.GetAllSceneCameras().ToList();
-#else
-                List<Camera> cams = new List<Camera>();
-#endif
-                cams.Add(Camera.main);
-                foreach(Camera cam in cams)
+                LRUCache.MarkAllUnused();
+                for(int i = 0; i < cams.Count; ++i)
                 {
-                    CamState camState = new CamState();
+                    Camera cam = cams[i];
+                    CamState camState = camStates[i];
                     Matrix4x4 cameraMatrix = cam.projectionMatrix * cam.worldToCameraMatrix * this.transform.localToWorldMatrix;
                     camState.planes = GeometryUtility.CalculateFrustumPlanes(cameraMatrix);
                     camState.pixelSizeVector = computePixelSizeVector(cam.scaledPixelWidth, cam.scaledPixelHeight, cam.projectionMatrix, cam.worldToCameraMatrix * this.transform.localToWorldMatrix);
-                    camStates.Add(camState);
                 }
 
                 // All of our bounding boxes and tiles are using tileset coordinate frame so lets get our frustrum planes
                 // in tileset frame.  This way we only need to transform our planes, not every bounding box we need to check against
                 int loadCount = 0;
-                this.Root.Traverse(Time.frameCount, camStates.ToArray(), ref loadCount);
+                this.Root.Traverse(Time.frameCount, camStates.ToArray(), ref loadCount, ref stagingCount);
 
                 //if(loadCount > 0)
                 //{
                 //    UnityEngine.Debug.Log(string.Format("Need to load {0} files", loadCount));
                 //}
+                LRUCache.UnloadUnusedContent(this.MaximumLod, 0.2f, n => -n.Depth, t => t.UnloadChildren());
+                //UnityEngine.Debug.Log(string.Format("Used {0} pagedLODs", LRUCache.Used));
+                //UnityEngine.Debug.Log(string.Format("Staging {0} files", stagingCount));
 
-                timeSinceLastCalled += Time.deltaTime;
-                if (timeSinceLastCalled > delay)
-                {
-                    timeSinceLastCalled = 0f;
-                    Resources.UnloadUnusedAssets();
-                }
+                //timeSinceLastCalled += Time.deltaTime;
+                //if (timeSinceLastCalled > delay)
+                //{
+                //    timeSinceLastCalled = 0f;
+                //    Resources.UnloadUnusedAssets();
+                //}
             }
         }
 
@@ -110,7 +132,7 @@ namespace Unity3MXB
 
             if (file.EndsWith(".3mxb", StringComparison.OrdinalIgnoreCase))
             {
-                this.Root = new PagedLOD("root", this.transform, dir);
+                this.Root = new PagedLOD("root", this.transform, dir, 0);
                 this.Root.unity3MXBComponent = this;
                 this.Root.MaxScreenDiameter = 0;
                 this.Root.BoundingSphere = new TileBoundingSphere(new Vector3(0, 0, 0), 1e30f);

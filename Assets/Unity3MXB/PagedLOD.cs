@@ -77,7 +77,9 @@ namespace Unity3MXB
 
         public int FrameNumberOfLastTraversal;
 
-        public PagedLOD(string name, Transform parent, string dir)
+        public int Depth;
+
+        public PagedLOD(string name, Transform parent, string dir, int depth)
         {
             this.dir = dir;
 
@@ -92,6 +94,8 @@ namespace Unity3MXB
             this.CommitedChildren = new List<PagedLOD>();
 
             this.FrameNumberOfLastTraversal = -1;
+
+            this.Depth = depth;
         }
 
         public void AddMeshTexture(List<RawTexMesh> rawMeshs)
@@ -128,11 +132,11 @@ namespace Unity3MXB
                 mr.enabled = false;
                 if(rawMesh.Texture.ImgData != null)
                 {
-                    Texture2D texture;
-                    texture = new Texture2D(rawMesh.Texture.Width, rawMesh.Texture.Height, TextureFormat.RGB24, false);
+                    //Texture2D texture = Texture2D.whiteTexture;
+                    Texture2D texture = new Texture2D(rawMesh.Texture.Width, rawMesh.Texture.Height, TextureFormat.RGB24, false);
                     texture.LoadRawTextureData(rawMesh.Texture.ImgData);
                     texture.filterMode = FilterMode.Bilinear;
-                    texture.wrapMode = TextureWrapMode.Repeat;
+                    texture.wrapMode = TextureWrapMode.Clamp;
                     // After we conduct the Apply(), then we can make the texture non-readable and never create a CPU copy
                     texture.Apply(true, true);
                     mr.material.SetTexture("_MainTex", texture);
@@ -160,43 +164,48 @@ namespace Unity3MXB
                     {
                         mr.receiveShadows = this.unity3MXBComponent.ReceiveShadows;
                     }
-                }
-                if (this.unity3MXBComponent.AddColliders)
-                {
-                    if(this.HasColliders == false)
+                    if (this.unity3MXBComponent.AddColliders)
                     {
-                        MeshCollider collider = mr.gameObject.AddComponent<MeshCollider>();
-                        collider.sharedMesh = mr.gameObject.GetComponent<MeshFilter>().mesh;
-                        this.HasColliders = true;
+                        if(this.HasColliders == false)
+                        {
+                            MeshCollider collider = mr.gameObject.AddComponent<MeshCollider>();
+                            collider.sharedMesh = mr.gameObject.GetComponent<MeshFilter>().mesh;
+                            this.HasColliders = true;
+                        }
                     }
-                }
-                else
-                {
-                    if(this.HasColliders)
+                    else
                     {
-                        MeshCollider collider = mr.gameObject.GetComponent<MeshCollider>();
-                        GameObject.Destroy(mr.gameObject.GetComponent<MeshCollider>());
-                        this.HasColliders = false;
+                        if(this.HasColliders)
+                        {
+                            GameObject.Destroy(mr.gameObject.GetComponent<MeshCollider>());
+                            this.HasColliders = false;
+                        }
                     }
                 }
             }
         }
 
-        public bool UnloadChildren()
+        bool MarkStagingChildren(ref int stagingCount)
         {
-            // recursively check every child's children's status to see if they are staging, if true, do NOT destory this child
-            if(this.childrenStatus == ChildrenStatus.Unstaged)
+            if(stagingCount == 0)
             {
                 return false;
             }
-            else if(this.childrenStatus == ChildrenStatus.Staging)
+            // recursively check every child's children's status to see if they are staging, if true, do NOT destory this child
+            if (this.childrenStatus == ChildrenStatus.Unstaged)
             {
+                return false;
+            }
+            else if (this.childrenStatus == ChildrenStatus.Staging)
+            {
+                this.unity3MXBComponent.LRUCache.MarkUsed(this);
                 return true;
             }
-            else if(this.childrenStatus == ChildrenStatus.Staged)
+            else if (this.childrenStatus == ChildrenStatus.Staged)
             {
                 this.StagedChildren.Clear();
                 this.childrenStatus = ChildrenStatus.Unstaged;
+                --stagingCount;
                 return false;
             }
 
@@ -209,21 +218,24 @@ namespace Unity3MXB
                 }
                 else
                 {
-                    hasStagingChid = hasStagingChid | child.UnloadChildren();
+                    hasStagingChid = hasStagingChid | child.MarkStagingChildren(ref stagingCount);
                 }
             }
             if(hasStagingChid)
             {
-                return true;
+                this.unity3MXBComponent.LRUCache.MarkUsed(this);
             }
-            
+            return hasStagingChid;
+        }
+
+        public void UnloadChildren()
+        {       
             foreach (PagedLOD child in this.CommitedChildren)
             {
                 GameObject.Destroy(child.Go);
             }
             this.CommitedChildren.Clear();
             this.childrenStatus = ChildrenStatus.Unstaged;
-            return false;
         }
 
         public static void StageChildren(string dir, List<string> childrenFiles, List<RawPagedLOD> stagedChildren)
@@ -237,15 +249,13 @@ namespace Unity3MXB
             }
         }
 
-        public void Traverse(int frameCount, CamState[] camStates, ref int loadCount)
+        public void Traverse(int frameCount, CamState[] camStates, ref int loadCount, ref int stagingCount)
         {
             if(camStates.Length == 0)
             {
                 return;
             }
             this.FrameNumberOfLastTraversal = frameCount;
-
-            // TODO: add cache
 
             // TODO: optimize run speed
 
@@ -264,7 +274,7 @@ namespace Unity3MXB
             if (isInSide == false)
             {
                 this.EnableRenderer(false);
-                this.UnloadChildren();
+                MarkStagingChildren(ref stagingCount);
                 return;
             }
 
@@ -272,7 +282,7 @@ namespace Unity3MXB
             if (screenDiameter < MaxScreenDiameter || this.ChildrenFiles.Count == 0)
             {
                 this.EnableRenderer(true);
-                this.UnloadChildren();
+                MarkStagingChildren(ref stagingCount);
             }
             else
             {
@@ -286,7 +296,7 @@ namespace Unity3MXB
                     }
                     foreach (RawPagedLOD stagedChild in this.StagedChildren)
                     {
-                        PagedLOD commitedChild = new PagedLOD(stagedChild.id, this.Go.transform, stagedChild.dir);
+                        PagedLOD commitedChild = new PagedLOD(stagedChild.id, this.Go.transform, stagedChild.dir, this.Depth + 1);
                         commitedChild.unity3MXBComponent = this.unity3MXBComponent;
                         commitedChild.BBMin = stagedChild.BBMin;
                         commitedChild.BBMax = stagedChild.BBMax;
@@ -298,15 +308,18 @@ namespace Unity3MXB
                     }
                     this.StagedChildren.Clear();
                     this.childrenStatus = ChildrenStatus.Commited;
+                    this.unity3MXBComponent.LRUCache.Add(this);
+                    --stagingCount;
                     ++loadCount;
                 }
                 // commited
                 if (this.childrenStatus == ChildrenStatus.Commited)
                 {
                     this.EnableRenderer(false);
+                    this.unity3MXBComponent.LRUCache.MarkUsed(this);
                     foreach (PagedLOD pagedLOD in this.CommitedChildren)
                     {
-                        pagedLOD.Traverse(Time.frameCount, camStates, ref loadCount);
+                        pagedLOD.Traverse(Time.frameCount, camStates, ref loadCount, ref stagingCount);
                     }
                 }
                 else
@@ -315,6 +328,7 @@ namespace Unity3MXB
                     if (this.childrenStatus == ChildrenStatus.Unstaged)
                     {
                         this.childrenStatus = ChildrenStatus.Staging;
+                        ++stagingCount;
                         PCQueue.Current.EnqueueItem(() =>
                         {
                             // stage
