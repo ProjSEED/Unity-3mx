@@ -186,7 +186,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8dab78d974b8e31418ac2b211e266c45, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Url: http://localhost/Production_2.3mxb
+  Url: data://root.3mxb
   MaximumLod: 1000
   ShaderOverride: {fileID: 0}
   AddColliders: 0
