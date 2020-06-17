@@ -1,9 +1,13 @@
+.gitignore
 /Library
 /Temp
 /obj
 /Logs
 /.vs
+/.git
 /Build
+/BuildAndroid
+/BuildWeb
 Assembly-CSharp.csproj
 Assembly-CSharp-Editor.csproj
 Assembly-CSharp.Player.csproj
