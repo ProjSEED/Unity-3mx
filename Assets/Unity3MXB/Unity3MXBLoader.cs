@@ -24,6 +24,7 @@ namespace Unity3MXB
             this.dir = dir;
             _rawTextureCache = new Dictionary<string, RawTexture>();
             _rawMeshCache = new Dictionary<string, RawMesh>();
+            _rawPointCloudCache = new Dictionary<string, RawPointCloud>();
             _meshTextureIdCache = new Dictionary<string, string>();
         }
 
@@ -32,6 +33,8 @@ namespace Unity3MXB
         protected Dictionary<string, RawTexture> _rawTextureCache { get; set; }
 
         protected Dictionary<string, RawMesh> _rawMeshCache { get; set; }
+
+        protected Dictionary<string, RawPointCloud> _rawPointCloudCache { get; set; }
 
         protected Dictionary<string, string> _meshTextureIdCache { get; set; }
 
@@ -115,9 +118,47 @@ namespace Unity3MXB
             }
         }
 
+        protected void ConstructRawPointCloud(string id, BinaryReader br, int size, Vector3 bbMin, Vector3 bbMax)
+        {
+            // TODO: pointcloud
+            if (_rawPointCloudCache.ContainsKey(id) == false)
+            {
+                RawPointCloud rawPointCloud = new RawPointCloud();
+                Int32 vertNum = br.ReadInt32();
+                byte[] vertData = br.ReadBytes(vertNum * 3 * 4);
+                byte[] colorData = br.ReadBytes(vertNum * 4);
+                List<Vector3> Vertices = new List<Vector3>();
+                List<Color> Colors = new List<Color>();
+                for (int i = 0; i < vertNum; ++i)
+                {
+                    Vector3 vert;
+                    vert.x = BitConverter.ToSingle(vertData, i * 3 * 4);
+                    vert.y = BitConverter.ToSingle(vertData, i * 3 * 4 + 4);
+                    vert.z = BitConverter.ToSingle(vertData, i * 3 * 4 + 8);
+                    Vertices.Add(vert);
+                    Color color;
+                    color.r = colorData[i * 4] / 255.0f;
+                    color.g = colorData[i * 4 + 1] / 255.0f;
+                    color.b = colorData[i * 4 + 2] / 255.0f;
+                    color.a = colorData[i * 4 + 3] / 255.0f;
+                    Colors.Add(color);
+                }
+                rawPointCloud.Vertices = Vertices.ToArray();
+                rawPointCloud.Colors = Colors.ToArray();
+                _rawPointCloudCache.Add(id, rawPointCloud);
+            }
+        }
+
         public void LoadStream(string relativeFilePath)
         {
-            this.loader.LoadStream(relativeFilePath);
+            try
+            {
+                this.loader.LoadStream(relativeFilePath);
+            }
+            catch(Exception ex)
+            {
+                return;
+            }
 
             if (this.loader.LoadedStream.Length == 0)
             {
@@ -188,6 +229,20 @@ namespace Unity3MXB
                             swGeometry.Stop();
 #endif
                         }
+                        else if (resource.Type == "geometryBuffer" && resource.Format == "xyz")
+                        {
+#if DEBUG_TIME
+                            swGeometry.Start();
+#endif
+                            ConstructRawPointCloud(resource.Id, br, resource.Size,
+                                new Vector3(resource.BBMin[0], resource.BBMin[2], resource.BBMin[1]),
+                                new Vector3(resource.BBMax[0], resource.BBMax[2], resource.BBMax[1]));
+
+                            //_meshTextureIdCache.Add(resource.Id, resource.Texture);
+#if DEBUG_TIME
+                            swGeometry.Stop();
+#endif
+                        }
                         else
                         {
                             Debug.LogError("Unexpected buffer type in 3mxb file: " + relativeFilePath);
@@ -216,6 +271,7 @@ namespace Unity3MXB
                         for (int j = 0; j < node.Resources.Count; ++j)
                         {
                             RawMesh mesh;
+                            RawPointCloud pointCloud;
                             if (_rawMeshCache.TryGetValue(node.Resources[j], out mesh))
                             {
                                 RawTexMesh texMesh = new RawTexMesh();
@@ -235,6 +291,12 @@ namespace Unity3MXB
                                 }
                                 texMesh.Texture = texture;
                                 rawPagedLOD.TexMeshs.Add(texMesh);
+                                rawPagedLOD.IsPointCloud = false;
+                            }
+                            else if(_rawPointCloudCache.TryGetValue(node.Resources[j], out pointCloud))
+                            {
+                                rawPagedLOD.PointClouds.Add(pointCloud);
+                                rawPagedLOD.IsPointCloud = true;
                             }
                         }
                         this.StagedChildren.Add(rawPagedLOD);

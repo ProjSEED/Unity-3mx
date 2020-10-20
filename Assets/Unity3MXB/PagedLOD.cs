@@ -27,6 +27,14 @@ namespace Unity3MXB
         public RawTexture Texture;
     }
 
+    public struct RawPointCloud
+    {
+        public Vector3[] Vertices;
+        public Color[] Colors;
+        public Vector3 BBMin;
+        public Vector3 BBMax;
+    }
+
     public class RawPagedLOD
     {
         public string dir;
@@ -37,9 +45,11 @@ namespace Unity3MXB
         public TileBoundingSphere BoundingSphere;
         public float MaxScreenDiameter;
 
-        public List<string> ChildrenFiles; 
+        public List<string> ChildrenFiles;
 
+        public bool IsPointCloud = false;
         public List<RawTexMesh> TexMeshs = new List<RawTexMesh>();
+        public List<RawPointCloud> PointClouds = new List<RawPointCloud>();
     }
 
     public class CamState
@@ -62,7 +72,8 @@ namespace Unity3MXB
 
         private string dir;
         private GameObject Go;  // one node could contains more than one mesh, use this GameObject as a group, insert each mesh to a child GameObject
-        private bool HasColliders = false; 
+        private bool HasColliders = false;
+        public bool IsPointCloud = false;
 
         public Vector3 BBMin;
         public Vector3 BBMax;
@@ -144,6 +155,39 @@ namespace Unity3MXB
             }
             //sw.Stop();
             //UnityEngine.Debug.Log(string.Format("AddMeshTexture: {0} ms", sw.ElapsedMilliseconds));
+        }
+
+        public void AddPointCloud(List<RawPointCloud> rawPointClouds)
+        {
+            // TODO: pointcloud
+            foreach (RawPointCloud rawPointCloud in rawPointClouds)
+            {
+                GameObject goSingleMesh = new GameObject();
+                goSingleMesh.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
+                goSingleMesh.transform.SetParent(this.Go.transform, false);
+
+                UnityEngine.Mesh um = new UnityEngine.Mesh();
+                um.vertices = rawPointCloud.Vertices;
+                um.colors = rawPointCloud.Colors;
+
+                um.bounds.SetMinMax(rawPointCloud.BBMin, rawPointCloud.BBMax);
+
+                MeshFilter mf = goSingleMesh.AddComponent<MeshFilter>();
+                mf.mesh = um;
+
+                MeshRenderer mr = goSingleMesh.AddComponent<MeshRenderer>();
+                mr.enabled = false;
+                //Material mat = new Material(Shader.Find("Custom/VertexColor"));
+                //mr.material = mat;
+
+                int[] indecies = new int[rawPointCloud.Vertices.Length];
+                for (int i = 0; i < rawPointCloud.Vertices.Length; ++i)
+                {
+                    indecies[i] = i;
+                }
+
+                um.SetIndices(indecies, MeshTopology.Points, 0);
+            }
         }
 
         private void EnableRenderer(bool enabled)
@@ -240,9 +284,11 @@ namespace Unity3MXB
 
         public static void StageChildren(string dir, List<string> childrenFiles, List<RawPagedLOD> stagedChildren)
         {
+            char[] slash = { '/', '\\' };
             for (int j = 0; j < childrenFiles.Count; ++j)
             {
                 string file = childrenFiles[j];
+                file = file.TrimStart(slash);
                 Unity3MXBLoader loaderChild = new Unity3MXBLoader(dir);
                 loaderChild.StagedChildren = stagedChildren;
                 loaderChild.LoadStream(file);
@@ -303,7 +349,14 @@ namespace Unity3MXB
                         commitedChild.BoundingSphere = stagedChild.BoundingSphere;
                         commitedChild.MaxScreenDiameter = stagedChild.MaxScreenDiameter;
                         commitedChild.ChildrenFiles = stagedChild.ChildrenFiles;
-                        commitedChild.AddMeshTexture(stagedChild.TexMeshs);
+                        if(stagedChild.IsPointCloud)
+                        {
+                            commitedChild.AddPointCloud(stagedChild.PointClouds);
+                        }
+                        else
+                        {
+                            commitedChild.AddMeshTexture(stagedChild.TexMeshs);
+                        }
                         this.CommitedChildren.Add(commitedChild);
                     }
                     this.StagedChildren.Clear();
