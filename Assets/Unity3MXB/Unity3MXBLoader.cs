@@ -133,8 +133,8 @@ namespace Unity3MXB
                 {
                     Vector3 vert;
                     vert.x = BitConverter.ToSingle(vertData, i * 3 * 4);
-                    vert.y = BitConverter.ToSingle(vertData, i * 3 * 4 + 4);
-                    vert.z = BitConverter.ToSingle(vertData, i * 3 * 4 + 8);
+                    vert.z = BitConverter.ToSingle(vertData, i * 3 * 4 + 4);
+                    vert.y = BitConverter.ToSingle(vertData, i * 3 * 4 + 8);
                     Vertices.Add(vert);
                     Color color;
                     color.r = colorData[i * 4] / 255.0f;
