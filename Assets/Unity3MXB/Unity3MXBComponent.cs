@@ -12,7 +12,7 @@ namespace Unity3MXB
     {
         public string Url;
         public int MaximumLod = 1000;
-        public Shader ShaderOverride = null;
+        public Material MaterialOverride = null;
         public bool AddColliders = false;
         public bool ReceiveShadows = true;
 

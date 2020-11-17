@@ -176,8 +176,6 @@ namespace Unity3MXB
 
                 MeshRenderer mr = goSingleMesh.AddComponent<MeshRenderer>();
                 mr.enabled = false;
-                //Material mat = new Material(Shader.Find("Custom/VertexColor"));
-                //mr.material = mat;
 
                 int[] indecies = new int[rawPointCloud.Vertices.Length];
                 for (int i = 0; i < rawPointCloud.Vertices.Length; ++i)
@@ -199,11 +197,11 @@ namespace Unity3MXB
                 }
                 if(mr.enabled == true)
                 {
-                    if ((this.unity3MXBComponent.ShaderOverride != null) && (mr.material.shader != this.unity3MXBComponent.ShaderOverride))
+                    if ((this.unity3MXBComponent.MaterialOverride != null) && (mr.material != this.unity3MXBComponent.MaterialOverride))
                     {
-                        mr.material.shader = this.unity3MXBComponent.ShaderOverride;
+                        mr.material = this.unity3MXBComponent.MaterialOverride;
                     }
-                    if(mr.receiveShadows != this.unity3MXBComponent.ReceiveShadows)
+                    if (mr.receiveShadows != this.unity3MXBComponent.ReceiveShadows)
                     {
                         mr.receiveShadows = this.unity3MXBComponent.ReceiveShadows;
                     }
