@@ -30,7 +30,7 @@ namespace Unity3MXB.Loader
             WebRequest.Timeout = 5000;
 
             WebResponse webResponse = WebRequest.GetResponse();
-            if((webResponse as HttpWebResponse) != null)
+            if ((webResponse as HttpWebResponse) != null)
             {
                 HttpWebResponse httpWebResponse = (HttpWebResponse)webResponse;
                 if ((int)httpWebResponse.StatusCode >= 400)
@@ -44,13 +44,43 @@ namespace Unity3MXB.Loader
             LoadedStream = new MemoryStream();
             webResponse.GetResponseStream().CopyTo(LoadedStream);
             LoadedStream.Position = 0;
-            
+
             if (webResponse.ContentLength > int.MaxValue)
             {
                 webResponse.Close();
                 throw new Exception("Stream is larger than can be copied into byte array");
             }
             webResponse.Close();
+        }
+
+        public override IEnumerator SendCo(string rootUri, string httpRequestPath, Action<string, string> onDownloadString = null, Action<byte[], string> onDownloadBytes = null)
+        {
+            if (onDownloadBytes == null && onDownloadString == null ||
+                onDownloadBytes != null && onDownloadString != null)
+            {
+                throw new Exception("Send must use either string or byte[] data type");
+            }
+
+            UnityWebRequest www = new UnityWebRequest(Path.Combine(rootUri, httpRequestPath), "GET",
+                new DownloadHandlerBuffer(), null);
+            www.timeout = 5000;
+#if UNITY_2017_2_OR_NEWER
+            yield return www.SendWebRequest();
+#else
+            yield return www.Send();
+#endif
+            if ((int)www.responseCode >= 400)
+            {
+                Debug.LogErrorFormat("{0} - {1}", www.responseCode, www.url);
+                throw new Exception("Response code invalid");
+            }
+            if (www.downloadedBytes > int.MaxValue)
+            {
+                throw new Exception("Stream is larger than can be copied into byte array");
+            }
+            bool isError = (www.isNetworkError || www.isHttpError);
+            onDownloadString?.Invoke(www.downloadHandler.text, isError ? www.error : null);
+            onDownloadBytes?.Invoke(www.downloadHandler.data, isError ? www.error : null);
         }
     }
 
@@ -70,14 +100,14 @@ namespace Unity3MXB.Loader
         public static AbstractWebRequestLoader CreateDefaultRequestLoader(string rootUri)
         {
             return LoaderPrototype.GenerateNewWebRequestLoader(rootUri);
-        }      
-
-        public abstract void Send(string rootUri, string httpRequestPath);
+        }
 
         public AbstractWebRequestLoader(string rootURI) : base()
-		{
-			_rootURI = rootURI;
-		}
+        {
+            _rootURI = rootURI;
+        }
+
+        public abstract void Send(string rootUri, string httpRequestPath);
 
         public void LoadStream(string inputFilePath)
         {
@@ -87,6 +117,30 @@ namespace Unity3MXB.Loader
             }
 
             Send(_rootURI, inputFilePath);
+        }
+
+        public abstract IEnumerator SendCo(string rootUri, string httpRequestPath, Action<string, string> onDownloadString = null, Action<byte[], string> onDownloadBytes = null);
+
+        public IEnumerator LoadStreamCo(string gltfFilePath)
+        {
+            if (gltfFilePath == null)
+            {
+                throw new ArgumentNullException("gltfFilePath");
+            }
+
+            Action<byte[], string> onDownload = (data, error) =>
+            {
+                if (error != null || data.Length == 0)
+                {
+                    LoadedStream = new MemoryStream(new byte[] { }, 0, 0, true, true);
+                }
+                else
+                {
+                    LoadedStream = new MemoryStream(data, 0, data.Length, true, true);
+                }
+            };
+
+            yield return SendCo(_rootURI, gltfFilePath, onDownloadBytes: onDownload);
         }
     }
 }

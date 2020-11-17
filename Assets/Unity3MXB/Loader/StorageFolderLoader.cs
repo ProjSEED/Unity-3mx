@@ -40,6 +40,30 @@ namespace Unity3MXB.Loader
 			StorageFile bufferFile = await parentFolder.GetFileAsync(fileName);
 			LoadedStream = await bufferFile.OpenStreamForReadAsync();
 		}
+
+		public IEnumerator LoadStreamCo(string gltfFilePath)
+		{
+			if (gltfFilePath == null)
+			{
+				throw new ArgumentNullException("gltfFilePath");
+			}
+			
+			yield return LoadStorageFileCo(gltfFilePath).AsCoroutine();
+		}
+
+		public async Task LoadStorageFileCo(string path)
+		{
+			StorageFolder parentFolder = _rootFolder;
+			string fileName = Path.GetFileName(path);
+			if (path != fileName)
+			{
+				string folderToLoad = path.Substring(0, path.Length - fileName.Length);
+				parentFolder = await _rootFolder.GetFolderAsync(folderToLoad);
+			}
+
+			StorageFile bufferFile = await parentFolder.GetFileAsync(fileName);
+			LoadedStream = await bufferFile.OpenStreamForReadAsync();
+		}
 	}
 }
 #endif
