@@ -197,9 +197,9 @@ namespace Unity3MXB
                 }
                 if(mr.enabled == true)
                 {
-                    if ((this.unity3MXBComponent.MaterialOverride != null) && (mr.material != this.unity3MXBComponent.MaterialOverride))
+                    if ((this.unity3MXBComponent.MaterialOverride != null) && (mr.sharedMaterial != this.unity3MXBComponent.MaterialOverride))
                     {
-                        mr.material = this.unity3MXBComponent.MaterialOverride;
+                        mr.sharedMaterial = this.unity3MXBComponent.MaterialOverride;
                     }
                     if (mr.receiveShadows != this.unity3MXBComponent.ReceiveShadows)
                     {
