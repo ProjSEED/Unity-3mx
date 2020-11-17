@@ -70,7 +70,7 @@ namespace Unity3MXB
 
         public Unity3MXBComponent unity3MXBComponent = null;
 
-        private string dir;
+        public string dir;
         private GameObject Go;  // one node could contains more than one mesh, use this GameObject as a group, insert each mesh to a child GameObject
         private bool HasColliders = false;
         public bool IsPointCloud = false;
@@ -97,7 +97,7 @@ namespace Unity3MXB
             this.Go = new GameObject();
             this.Go.name = name;
             this.Go.transform.SetParent(parent, false);
-            this.Go.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
+            //this.Go.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
 
             this.childrenStatus = ChildrenStatus.Unstaged;
             this.StagedChildren = new List<RawPagedLOD>();
@@ -116,7 +116,7 @@ namespace Unity3MXB
             foreach (RawTexMesh rawMesh in rawMeshs)
             {
                 GameObject goSingleMesh = new GameObject();
-                goSingleMesh.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
+                //goSingleMesh.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
                 goSingleMesh.transform.SetParent(this.Go.transform, false);
                 
                 UnityEngine.Mesh um = new UnityEngine.Mesh();
@@ -159,11 +159,10 @@ namespace Unity3MXB
 
         public void AddPointCloud(List<RawPointCloud> rawPointClouds)
         {
-            // TODO: pointcloud
             foreach (RawPointCloud rawPointCloud in rawPointClouds)
             {
                 GameObject goSingleMesh = new GameObject();
-                goSingleMesh.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
+                //goSingleMesh.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
                 goSingleMesh.transform.SetParent(this.Go.transform, false);
 
                 UnityEngine.Mesh um = new UnityEngine.Mesh();
@@ -382,12 +381,8 @@ namespace Unity3MXB
                     {
                         this.childrenStatus = ChildrenStatus.Staging;
                         ++stagingCount;
-                        PCQueue.Current.EnqueueItem(() =>
-                        {
-                            // stage
-                            StageChildren(this.dir, this.ChildrenFiles, this.StagedChildren);
-                            this.childrenStatus = ChildrenStatus.Staged;
-                        });
+                        StageTask stageTask = new StageTask(this);
+                        PCQueue.Current.EnqueueItem(stageTask);
                     }
                 }
             }
