@@ -21,9 +21,9 @@ namespace Unity3MXB
             Parent = parent;
             this.dir = parent.dir;
             this.loader = Loader.AbstractWebRequestLoader.CreateDefaultRequestLoader(dir);
-            _rawTextureCache = new Dictionary<string, RawTexture>();
-            _rawMeshCache = new Dictionary<string, RawMesh>();
-            _rawPointCloudCache = new Dictionary<string, RawPointCloud>();
+            _TextureCache = new Dictionary<string, Texture2D>();
+            _MeshCache = new Dictionary<string, Mesh>();
+            _PointCloudCache = new Dictionary<string, Mesh>();
             _meshTextureIdCache = new Dictionary<string, string>();
         }
 
@@ -31,25 +31,25 @@ namespace Unity3MXB
 
         public Stream LoadedStream { get; private set; }
 
-        protected Dictionary<string, RawTexture> _rawTextureCache { get; set; }
+        protected Dictionary<string, Texture2D> _TextureCache { get; set; }
 
-        protected Dictionary<string, RawMesh> _rawMeshCache { get; set; }
+        protected Dictionary<string, Mesh> _MeshCache { get; set; }
 
-        protected Dictionary<string, RawPointCloud> _rawPointCloudCache { get; set; }
+        protected Dictionary<string, Mesh> _PointCloudCache { get; set; }
 
         protected Dictionary<string, string> _meshTextureIdCache { get; set; }
 
         public void Dispose()
         {
-            _rawTextureCache = null;
-            _rawMeshCache = null;
+            _TextureCache = null;
+            _MeshCache = null;
             _meshTextureIdCache = null;
-            _rawPointCloudCache = null;
+            _PointCloudCache = null;
         }
 
-        protected void ConstructRawTexture(string id, BinaryReader br, int size)
+        protected void ConstructTexture(string id, BinaryReader br, int size)
         {
-            if (_rawTextureCache.ContainsKey(id) == false)
+            if (_TextureCache.ContainsKey(id) == false)
             {
                 byte[] data = br.ReadBytes(size);
                 NanoJPEG nanoJPEG = new NanoJPEG();
@@ -58,98 +58,110 @@ namespace Unity3MXB
 
                 if(rawPixels != null && rawPixels.Length > 0 && rawPixels.Length == nanoJPEG.njGetWidth() * nanoJPEG.njGetHeight() * 3)
                 {
-                    RawTexture texture = new RawTexture();
-                    texture.ImgData = rawPixels;
-                    texture.Width = nanoJPEG.njGetWidth();
-                    texture.Height = nanoJPEG.njGetHeight();
-                    _rawTextureCache.Add(id, texture);
+                    Texture2D texture2d = new Texture2D(nanoJPEG.njGetWidth(), nanoJPEG.njGetHeight(), TextureFormat.RGB24, false);
+                    texture2d.LoadRawTextureData(rawPixels);
+                    texture2d.filterMode = FilterMode.Bilinear;
+                    texture2d.wrapMode = TextureWrapMode.Clamp;
+                    // After we conduct the Apply(), then we can make the texture non-readable and never create a CPU copy
+                    texture2d.Apply(true, true);
+
+                    _TextureCache.Add(id, texture2d);
                 }
             }
         }
 
-        protected void ConstructRawMesh(string id, BinaryReader br, int size, Vector3 bbMin, Vector3 bbMax)
+        protected void ConstructMesh(string id, BinaryReader br, int size, Vector3 bbMin, Vector3 bbMax)
         {
-#if !UNITY_WEBGL
-            // TODO: solve the issue that OpenCTM does NOT support multi-threading
-            lock (PCQueue.Current.LockerForUser)
-#endif
-            if (_rawMeshCache.ContainsKey(id) == false)
+            // NOTE: OpenCTM does NOT support multi-threading
+            if (_MeshCache.ContainsKey(id) == false)
             {
                 OpenCTM.CtmFileReader reader = new OpenCTM.CtmFileReader(br.BaseStream);
                 OpenCTM.Mesh mesh = reader.decode();
-
-                RawMesh rawMesh = new RawMesh();
-
+                UnityEngine.Mesh um = new UnityEngine.Mesh();
                 mesh.checkIntegrity();
-
                 {
-                    List<Vector3> Vertices = new List<Vector3>();
+                    Vector3[] Vertices = new Vector3[mesh.getVertexCount()];
                     for (int j = 0; j < mesh.getVertexCount(); j++)
-                        Vertices.Add(new Vector3(mesh.vertices[(j * 3)], mesh.vertices[(j * 3) + 2], mesh.vertices[(j * 3) + 1]));
-                    rawMesh.Vertices = Vertices.ToArray();
+                    {
+                        Vertices[j].x = mesh.vertices[(j * 3)];
+                        Vertices[j].y = mesh.vertices[(j * 3) + 2];
+                        Vertices[j].z = mesh.vertices[(j * 3) + 1];
+                    }
+                    um.vertices = Vertices;
                 }
 
                 {
-                    List<int> Triangles = new List<int>();
+                    int[] Triangles = new int[mesh.indices.Length];
                     for (int j = 0; j < mesh.indices.Length / 3; j++)
                     {
-                        Triangles.Add(mesh.indices[(j * 3)]);
-                        Triangles.Add(mesh.indices[(j * 3) + 2]);
-                        Triangles.Add(mesh.indices[(j * 3) + 1]);
+                        Triangles[(j * 3)] = mesh.indices[(j * 3)];
+                        Triangles[(j * 3) + 1] = mesh.indices[(j * 3) + 2];
+                        Triangles[(j * 3) + 2] = mesh.indices[(j * 3) + 1];
                     }
-                    rawMesh.Triangles = Triangles.ToArray();
-                    }
+                    um.triangles = Triangles;
+                }
 
                 if (mesh.getUVCount() > 0)
                 {
-                    List<Vector2> UVList = new List<Vector2>();
+                    Vector2[] UVList = new Vector2[mesh.texcoordinates[0].values.Length / 2];
                     for (int j = 0; j < mesh.texcoordinates[0].values.Length / 2; j++)
-                        UVList.Add(new Vector2(mesh.texcoordinates[0].values[(j * 2)], 1 - mesh.texcoordinates[0].values[(j * 2) + 1]));
-                    rawMesh.UVList = UVList.ToArray();
+                    {
+                        UVList[j].x = mesh.texcoordinates[0].values[(j * 2)];
+                        UVList[j].y = 1 - mesh.texcoordinates[0].values[(j * 2) + 1];
                     }
+                    um.uv = UVList;
+                }
 
                 if (mesh.hasNormals())
                 {
-                    List<Vector3> Normals = new List<Vector3>();
+                    Vector3[] Normals = new Vector3[mesh.getVertexCount()];
                     for (int j = 0; j < mesh.getVertexCount(); j++)
-                        Normals.Add(new Vector3(mesh.normals[(j * 3)], mesh.normals[(j * 3) + 2], mesh.normals[(j * 3) + 1]));
-                    rawMesh.Normals = Normals.ToArray();
+                    {
+                        Normals[j].x = mesh.normals[(j * 3)];
+                        Normals[j].y = mesh.normals[(j * 3) + 2];
+                        Normals[j].z = mesh.normals[(j * 3) + 1];
                     }
-                rawMesh.BBMin = bbMin;
-                rawMesh.BBMax = bbMax;
+                    um.normals = Normals;
+                }
+                else
+                {
+                    um.RecalculateNormals();
+                }
 
-                _rawMeshCache.Add(id, rawMesh);
+                um.bounds.SetMinMax(bbMin, bbMax);
+
+                _MeshCache.Add(id, um);
             }
         }
 
-        protected void ConstructRawPointCloud(string id, BinaryReader br, int size, Vector3 bbMin, Vector3 bbMax)
+        protected void ConstructPointCloud(string id, BinaryReader br, int size, Vector3 bbMin, Vector3 bbMax)
         {
-            // TODO: pointcloud
-            if (_rawPointCloudCache.ContainsKey(id) == false)
+            if (_PointCloudCache.ContainsKey(id) == false)
             {
-                RawPointCloud rawPointCloud = new RawPointCloud();
                 Int32 vertNum = br.ReadInt32();
                 byte[] vertData = br.ReadBytes(vertNum * 3 * 4);
                 byte[] colorData = br.ReadBytes(vertNum * 4);
-                List<Vector3> Vertices = new List<Vector3>();
-                List<Color> Colors = new List<Color>();
+                Vector3[] Vertices = new Vector3[vertNum];
+                Color[] Colors = new Color[vertNum];
+                int[] indecies = new int[vertNum];
                 for (int i = 0; i < vertNum; ++i)
                 {
-                    Vector3 vert;
-                    vert.x = BitConverter.ToSingle(vertData, i * 3 * 4);
-                    vert.z = BitConverter.ToSingle(vertData, i * 3 * 4 + 4);
-                    vert.y = BitConverter.ToSingle(vertData, i * 3 * 4 + 8);
-                    Vertices.Add(vert);
-                    Color color;
-                    color.r = colorData[i * 4] / 255.0f;
-                    color.g = colorData[i * 4 + 1] / 255.0f;
-                    color.b = colorData[i * 4 + 2] / 255.0f;
-                    color.a = colorData[i * 4 + 3] / 255.0f;
-                    Colors.Add(color);
+                    Vertices[i].x = BitConverter.ToSingle(vertData, i * 3 * 4);
+                    Vertices[i].z = BitConverter.ToSingle(vertData, i * 3 * 4 + 4);
+                    Vertices[i].y = BitConverter.ToSingle(vertData, i * 3 * 4 + 8);
+                    Colors[i].r = colorData[i * 4] / 255.0f;
+                    Colors[i].g = colorData[i * 4 + 1] / 255.0f;
+                    Colors[i].b = colorData[i * 4 + 2] / 255.0f;
+                    Colors[i].a = colorData[i * 4 + 3] / 255.0f;
+                    indecies[i] = i;
                 }
-                rawPointCloud.Vertices = Vertices.ToArray();
-                rawPointCloud.Colors = Colors.ToArray();
-                _rawPointCloudCache.Add(id, rawPointCloud);
+                Mesh um = new Mesh();
+                um.vertices = Vertices;
+                um.colors = Colors;
+                um.bounds.SetMinMax(bbMin, bbMax);
+                um.SetIndices(indecies, MeshTopology.Points, 0);
+
+                _PointCloudCache.Add(id, um);
             }
         }
 
@@ -207,7 +219,7 @@ namespace Unity3MXB
 #if DEBUG_TIME
                             swTexture.Start();
 #endif
-                            ConstructRawTexture(resource.Id, br, resource.Size);
+                            ConstructTexture(resource.Id, br, resource.Size);
 #if DEBUG_TIME
                             swTexture.Stop();
 #endif
@@ -217,7 +229,7 @@ namespace Unity3MXB
 #if DEBUG_TIME
                             swGeometry.Start();
 #endif
-                            ConstructRawMesh(resource.Id, br, resource.Size,
+                            ConstructMesh(resource.Id, br, resource.Size,
                                 new Vector3(resource.BBMin[0], resource.BBMin[2], resource.BBMin[1]),
                                 new Vector3(resource.BBMax[0], resource.BBMax[2], resource.BBMax[1]));
 
@@ -231,7 +243,7 @@ namespace Unity3MXB
 #if DEBUG_TIME
                             swGeometry.Start();
 #endif
-                            ConstructRawPointCloud(resource.Id, br, resource.Size,
+                            ConstructPointCloud(resource.Id, br, resource.Size,
                                 new Vector3(resource.BBMin[0], resource.BBMin[2], resource.BBMin[1]),
                                 new Vector3(resource.BBMax[0], resource.BBMax[2], resource.BBMax[1]));
 #if DEBUG_TIME
@@ -265,29 +277,22 @@ namespace Unity3MXB
 
                         for (int j = 0; j < node.Resources.Count; ++j)
                         {
-                            RawMesh mesh;
-                            RawPointCloud pointCloud;
-                            if (_rawMeshCache.TryGetValue(node.Resources[j], out mesh))
+                            Mesh mesh;
+                            Mesh pointCloud;
+                            if (_MeshCache.TryGetValue(node.Resources[j], out mesh))
                             {
-                                RawTexMesh texMesh = new RawTexMesh();
-                                texMesh.Mesh = mesh;
-
-                                RawTexture texture;
-                                texture.Width = 0;
-                                texture.Height = 0;
-                                texture.ImgData = null;
+                                Texture2D texture = null;
                                 string textureId;
                                 if (_meshTextureIdCache.TryGetValue(node.Resources[j], out textureId))
                                 {
                                     if (textureId != null)
                                     {
-                                        _rawTextureCache.TryGetValue(textureId, out texture);
+                                        _TextureCache.TryGetValue(textureId, out texture);
                                     }
                                 }
-                                texMesh.Texture = texture;
-                                commitedChild.AddTextureMesh(texMesh);
+                                commitedChild.AddTextureMesh(mesh, texture);
                             }
-                            else if (_rawPointCloudCache.TryGetValue(node.Resources[j], out pointCloud))
+                            else if (_PointCloudCache.TryGetValue(node.Resources[j], out pointCloud))
                             {
                                 commitedChild.AddPointCloud(pointCloud);
                             }

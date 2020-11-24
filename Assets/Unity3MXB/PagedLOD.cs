@@ -4,54 +4,6 @@ using UnityEngine;
 
 namespace Unity3MXB
 {
-    public struct RawMesh
-    {
-        public Vector3[] Vertices;
-        public Vector2[] UVList;
-        public Vector3[] Normals;
-        public int[] Triangles;
-        public Vector3 BBMin;
-        public Vector3 BBMax;
-    }
-
-    public struct RawTexture
-    {
-        public int Width;
-        public int Height;
-        public byte[] ImgData;
-    }
-
-    public struct RawTexMesh
-    {
-        public RawMesh Mesh;
-        public RawTexture Texture;
-    }
-
-    public struct RawPointCloud
-    {
-        public Vector3[] Vertices;
-        public Color[] Colors;
-        public Vector3 BBMin;
-        public Vector3 BBMax;
-    }
-
-    public class RawPagedLOD
-    {
-        public string dir;
-        public string id;
-
-        public Vector3 BBMin;
-        public Vector3 BBMax;
-        public TileBoundingSphere BoundingSphere;
-        public float MaxScreenDiameter;
-
-        public List<string> ChildrenFiles;
-
-        public bool IsPointCloud = false;
-        public List<RawTexMesh> TexMeshs = new List<RawTexMesh>();
-        public List<RawPointCloud> PointClouds = new List<RawPointCloud>();
-    }
-
     public class CamState
     {
         public Vector4 pixelSizeVector;
@@ -125,76 +77,34 @@ namespace Unity3MXB
             this.Depth = depth;
         }
 
-        public void AddTextureMesh(RawTexMesh rawMesh)
+        public void AddTextureMesh(Mesh mesh, Texture2D texture)
         {
-            //System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
-            //sw.Start();
             GameObject goSingleMesh = new GameObject();
             //goSingleMesh.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
             goSingleMesh.transform.SetParent(this.Go.transform, false);
 
-            UnityEngine.Mesh um = new UnityEngine.Mesh();
-            um.vertices = rawMesh.Mesh.Vertices;
-            um.triangles = rawMesh.Mesh.Triangles;
-            if (rawMesh.Mesh.UVList != null)
-            {
-                um.uv = rawMesh.Mesh.UVList;
-            }
-            if (rawMesh.Mesh.Normals != null)
-            {
-                um.normals = rawMesh.Mesh.Normals;
-            }
-            else
-            {
-                um.RecalculateNormals();
-            }
-            um.bounds.SetMinMax(rawMesh.Mesh.BBMin, rawMesh.Mesh.BBMax);
-
             MeshFilter mf = goSingleMesh.AddComponent<MeshFilter>();
-            mf.mesh = um;
+            mf.mesh = mesh;
 
             MeshRenderer mr = goSingleMesh.AddComponent<MeshRenderer>();
             mr.enabled = false;
-            if (rawMesh.Texture.ImgData != null)
+            if (texture != null)
             {
-                //Texture2D texture = Texture2D.whiteTexture;
-                Texture2D texture = new Texture2D(rawMesh.Texture.Width, rawMesh.Texture.Height, TextureFormat.RGB24, false);
-                texture.LoadRawTextureData(rawMesh.Texture.ImgData);
-                texture.filterMode = FilterMode.Bilinear;
-                texture.wrapMode = TextureWrapMode.Clamp;
-                // After we conduct the Apply(), then we can make the texture non-readable and never create a CPU copy
-                texture.Apply(true, true);
                 mr.material.SetTexture("_MainTex", texture);
             }
-            //sw.Stop();
-            //UnityEngine.Debug.Log(string.Format("AddTextureMeshs: {0} ms", sw.ElapsedMilliseconds));
         }
 
-        public void AddPointCloud(RawPointCloud rawPointCloud)
+        public void AddPointCloud(Mesh pointCloud)
         {
             GameObject goSingleMesh = new GameObject();
             //goSingleMesh.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
             goSingleMesh.transform.SetParent(this.Go.transform, false);
 
-            UnityEngine.Mesh um = new UnityEngine.Mesh();
-            um.vertices = rawPointCloud.Vertices;
-            um.colors = rawPointCloud.Colors;
-
-            um.bounds.SetMinMax(rawPointCloud.BBMin, rawPointCloud.BBMax);
-
             MeshFilter mf = goSingleMesh.AddComponent<MeshFilter>();
-            mf.mesh = um;
+            mf.mesh = pointCloud;
 
             MeshRenderer mr = goSingleMesh.AddComponent<MeshRenderer>();
             mr.enabled = false;
-
-            int[] indecies = new int[rawPointCloud.Vertices.Length];
-            for (int i = 0; i < rawPointCloud.Vertices.Length; ++i)
-            {
-                indecies[i] = i;
-            }
-
-            um.SetIndices(indecies, MeshTopology.Points, 0);
         }
 
         private void EnableRenderer(bool enabled)
