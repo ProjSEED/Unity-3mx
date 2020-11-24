@@ -17,30 +17,6 @@ namespace Unity3MXB.Loader
 			_rootFolder = rootFolder;
 		}
 
-		public void LoadStream(string inputFilePath)
-		{
-			if (inputFilePath == null)
-			{
-				throw new ArgumentNullException("inputFilePath");
-			}
-
-			LoadStorageFile(inputFilePath).RunSynchronously();
-		}
-
-		public async Task LoadStorageFile(string path)
-		{
-			StorageFolder parentFolder = _rootFolder;
-			string fileName = Path.GetFileName(path);
-			if (path != fileName)
-			{
-				string folderToLoad = path.Substring(0, path.Length - fileName.Length);
-				parentFolder = await _rootFolder.GetFolderAsync(folderToLoad);
-			}
-
-			StorageFile bufferFile = await parentFolder.GetFileAsync(fileName);
-			LoadedStream = await bufferFile.OpenStreamForReadAsync();
-		}
-
 		public IEnumerator LoadStreamCo(string gltfFilePath)
 		{
 			if (gltfFilePath == null)

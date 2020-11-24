@@ -132,7 +132,7 @@ namespace Unity3MXB
 
             if (file.EndsWith(".3mxb", StringComparison.OrdinalIgnoreCase))
             {
-                this.Root = new PagedLOD("root", this.transform, dir, 0);
+                this.Root = new PagedLOD("root", dir, this.transform, 0);
                 this.Root.unity3MXBComponent = this;
                 this.Root.MaxScreenDiameter = 0;
                 this.Root.BoundingSphere = new TileBoundingSphere(new Vector3(0, 0, 0), 1e30f);

@@ -21,38 +21,6 @@ namespace Unity3MXB.Loader
             return new UnityWebRequestLoader(rootUri);
         }
 
-        public override void Send(string rootUri, string httpRequestPath)
-        {
-            WebRequest WebRequest = WebRequest.Create(Path.Combine(rootUri, httpRequestPath));
-
-            WebRequest.ContentType = "application/json";
-            WebRequest.Method = "GET";
-            WebRequest.Timeout = 5000;
-
-            WebResponse webResponse = WebRequest.GetResponse();
-            if ((webResponse as HttpWebResponse) != null)
-            {
-                HttpWebResponse httpWebResponse = (HttpWebResponse)webResponse;
-                if ((int)httpWebResponse.StatusCode >= 400)
-                {
-                    webResponse.Close();
-                    Debug.LogErrorFormat("{0} - {1}", httpWebResponse.StatusCode, httpWebResponse.ResponseUri);
-                    throw new Exception("Response code invalid");
-                }
-            }
-
-            LoadedStream = new MemoryStream();
-            webResponse.GetResponseStream().CopyTo(LoadedStream);
-            LoadedStream.Position = 0;
-
-            if (webResponse.ContentLength > int.MaxValue)
-            {
-                webResponse.Close();
-                throw new Exception("Stream is larger than can be copied into byte array");
-            }
-            webResponse.Close();
-        }
-
         public override IEnumerator SendCo(string rootUri, string httpRequestPath, Action<string, string> onDownloadString = null, Action<byte[], string> onDownloadBytes = null)
         {
             if (onDownloadBytes == null && onDownloadString == null ||
@@ -105,18 +73,6 @@ namespace Unity3MXB.Loader
         public AbstractWebRequestLoader(string rootURI) : base()
         {
             _rootURI = rootURI;
-        }
-
-        public abstract void Send(string rootUri, string httpRequestPath);
-
-        public void LoadStream(string inputFilePath)
-        {
-            if (inputFilePath == null)
-            {
-                throw new ArgumentNullException("inputFilePath");
-            }
-
-            Send(_rootURI, inputFilePath);
         }
 
         public abstract IEnumerator SendCo(string rootUri, string httpRequestPath, Action<string, string> onDownloadString = null, Action<byte[], string> onDownloadBytes = null);
