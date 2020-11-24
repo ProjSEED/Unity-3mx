@@ -85,7 +85,7 @@ public class PCQueue : MonoBehaviour
                 item = _itemQ.Dequeue();
                 if (item == null) yield break;         // This signals our exit.
                 yield return item.StageChildrenCo();                           // Execute item.
-                yield return null;
+                yield return new WaitForEndOfFrame();
             }
             yield return null;
 

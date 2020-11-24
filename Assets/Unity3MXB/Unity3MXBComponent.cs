@@ -55,7 +55,11 @@ namespace Unity3MXB
 
         public void Update()
         {
-            if(this.Root != null)
+#if DEBUG_TIME
+            System.Diagnostics.Stopwatch swUpdate = new System.Diagnostics.Stopwatch();
+            swUpdate.Start();
+#endif
+            if (this.Root != null)
             {
                 LRUCache.MarkAllUnused();
                 for(int i = 0; i < cams.Count; ++i)
@@ -87,6 +91,11 @@ namespace Unity3MXB
                 //    Resources.UnloadUnusedAssets();
                 //}
             }
+#if DEBUG_TIME
+            swUpdate.Stop();
+            UnityEngine.Debug.Log(string.Format("Update: {0} ms",
+                swUpdate.ElapsedMilliseconds));
+#endif
         }
 
         public Vector4 computePixelSizeVector(int ScreenWidth, int ScreenHeight, Matrix4x4 P, Matrix4x4 M)

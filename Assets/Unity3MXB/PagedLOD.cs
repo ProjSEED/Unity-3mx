@@ -238,7 +238,6 @@ namespace Unity3MXB
                 // commit
                 if (this.childrenStatus == ChildrenStatus.Staged)
                 {
-                    this.EnableRenderer(true);
                     this.childrenStatus = ChildrenStatus.Commited;
                     this.unity3MXBComponent.LRUCache.Add(this);
                     --stagingCount;

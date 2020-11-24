@@ -223,6 +223,7 @@ namespace Unity3MXB
 #if DEBUG_TIME
                             swTexture.Stop();
 #endif
+                            yield return new WaitForEndOfFrame();
                         }
                         else if (resource.Type == "geometryBuffer" && resource.Format == "ctm")
                         {
@@ -237,6 +238,7 @@ namespace Unity3MXB
 #if DEBUG_TIME
                             swGeometry.Stop();
 #endif
+                            yield return new WaitForEndOfFrame();
                         }
                         else if (resource.Type == "geometryBuffer" && resource.Format == "xyz")
                         {
@@ -249,6 +251,7 @@ namespace Unity3MXB
 #if DEBUG_TIME
                             swGeometry.Stop();
 #endif
+                            yield return new WaitForEndOfFrame();
                         }
                         else
                         {
@@ -299,6 +302,7 @@ namespace Unity3MXB
                         }
 
                         Parent.CommitedChildren.Add(commitedChild);
+                        yield return new WaitForEndOfFrame();
                     }
 #if DEBUG_TIME
                     swNodes.Stop();
