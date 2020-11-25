@@ -154,7 +154,7 @@ GameObject:
   - component: {fileID: 947725857}
   - component: {fileID: 947725858}
   m_Layer: 0
-  m_Name: 3MXB
+  m_Name: 3mx
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -191,6 +191,7 @@ MonoBehaviour:
   MaterialOverride: {fileID: 0}
   AddColliders: 0
   ReceiveShadows: 1
+  MaximumTilesToCommitPerFrame: 1
 --- !u!1 &993157203
 GameObject:
   m_ObjectHideFlags: 0
