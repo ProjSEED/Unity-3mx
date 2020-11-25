@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using RSG;
 
 namespace Unity3MXB
 {
@@ -8,6 +9,7 @@ namespace Unity3MXB
     {
         public Vector4 pixelSizeVector;
         public Plane[] planes;
+        public Vector3 position;
     }
 
     public class PagedLOD
@@ -23,7 +25,7 @@ namespace Unity3MXB
         public Unity3MXBComponent unity3MXBComponent = null;
 
         public string dir;
-        private GameObject Go;  // one node could contains more than one mesh, use this GameObject as a group, insert each mesh to a child GameObject
+        public GameObject Go;  // one node could contains more than one mesh, use this GameObject as a group, insert each mesh to a child GameObject
         private bool HasColliders = false;
         public bool IsPointCloud = false;
 
@@ -32,8 +34,8 @@ namespace Unity3MXB
         public TileBoundingSphere BoundingSphere;
         public float MaxScreenDiameter;
 
-        public ChildrenStatus childrenStatus;      // pass to thread, atomic
-        public List<string> ChildrenFiles;          // pass to thread
+        public ChildrenStatus childrenStatus;     
+        public List<string> ChildrenFiles;          
 
         public List<PagedLOD> CommitedChildren;
 
@@ -75,36 +77,6 @@ namespace Unity3MXB
             this.FrameNumberOfLastTraversal = -1;
 
             this.Depth = depth;
-        }
-
-        public void AddTextureMesh(Mesh mesh, Texture2D texture)
-        {
-            GameObject goSingleMesh = new GameObject();
-            //goSingleMesh.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
-            goSingleMesh.transform.SetParent(this.Go.transform, false);
-
-            MeshFilter mf = goSingleMesh.AddComponent<MeshFilter>();
-            mf.mesh = mesh;
-
-            MeshRenderer mr = goSingleMesh.AddComponent<MeshRenderer>();
-            mr.enabled = false;
-            if (texture != null)
-            {
-                mr.material.SetTexture("_MainTex", texture);
-            }
-        }
-
-        public void AddPointCloud(Mesh pointCloud)
-        {
-            GameObject goSingleMesh = new GameObject();
-            //goSingleMesh.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
-            goSingleMesh.transform.SetParent(this.Go.transform, false);
-
-            MeshFilter mf = goSingleMesh.AddComponent<MeshFilter>();
-            mf.mesh = pointCloud;
-
-            MeshRenderer mr = goSingleMesh.AddComponent<MeshRenderer>();
-            mr.enabled = false;
         }
 
         private void EnableRenderer(bool enabled)
@@ -198,9 +170,28 @@ namespace Unity3MXB
             this.childrenStatus = ChildrenStatus.Unstaged;
         }
 
-        public void Traverse(int frameCount, CamState[] camStates, ref int loadCount, ref int stagingCount)
+        public IEnumerator StageChildrenCo(Promise<bool> finished)
         {
-            if(camStates.Length == 0)
+            char[] slash = { '/', '\\' };
+            for (int j = 0; j < this.ChildrenFiles.Count; ++j)
+            {
+                string file = this.ChildrenFiles[j];
+                file = file.TrimStart(slash);
+                Unity3MXBLoader loaderChild = new Unity3MXBLoader(this);
+                yield return loaderChild.LoadStreamCo(file);
+            }
+            this.childrenStatus = PagedLOD.ChildrenStatus.Staged;
+            finished.Resolve(true);
+        }
+
+        public float Priority(float distanceToCamera)
+        {
+            return (float)(this.Depth - 1.0 / distanceToCamera);
+        }
+
+        public void Traverse(int frameCount, List<CamState> camStates, ref int stagingCount)
+        {
+            if(camStates.Count == 0)
             {
                 return;
             }
@@ -211,6 +202,7 @@ namespace Unity3MXB
             // cull by bounding sphere
             bool isInSide = false;
             float screenDiameter = 0;
+            float minDistance = float.MaxValue;
             foreach (CamState camState in camStates)
             {
                 PlaneClipMask mask = this.BoundingSphere.IntersectPlanes(camState.planes, PlaneClipMask.GetDefaultMask());
@@ -218,6 +210,8 @@ namespace Unity3MXB
                 {
                     isInSide = true;
                     screenDiameter = Mathf.Max(screenDiameter, this.BoundingSphere.ScreenDiameter(camState.pixelSizeVector));
+                    float distance = this.BoundingSphere.DistanceTo(camState.position);
+                    minDistance = Mathf.Min(distance, minDistance); // We take the min in case multiple cameras, reset dist to max float on frame reset
                 }
             }
             if (isInSide == false)
@@ -241,7 +235,6 @@ namespace Unity3MXB
                     this.childrenStatus = ChildrenStatus.Commited;
                     this.unity3MXBComponent.LRUCache.Add(this);
                     --stagingCount;
-                    ++loadCount;
                 }
                 // commited
                 if (this.childrenStatus == ChildrenStatus.Commited)
@@ -250,7 +243,7 @@ namespace Unity3MXB
                     this.unity3MXBComponent.LRUCache.MarkUsed(this);
                     foreach (PagedLOD pagedLOD in this.CommitedChildren)
                     {
-                        pagedLOD.Traverse(Time.frameCount, camStates, ref loadCount, ref stagingCount);
+                        pagedLOD.Traverse(Time.frameCount, camStates, ref stagingCount);
                     }
                 }
                 else
@@ -258,10 +251,21 @@ namespace Unity3MXB
                     this.EnableRenderer(true);
                     if (this.childrenStatus == ChildrenStatus.Unstaged)
                     {
-                        this.childrenStatus = ChildrenStatus.Staging;
-                        ++stagingCount;
-                        StageTask stageTask = new StageTask(this);
-                        PCQueue.Current.EnqueueItem(stageTask);
+                        if(!RequestManager.Current.Full())
+                        {
+                            this.childrenStatus = ChildrenStatus.Staging;
+                            ++stagingCount;
+
+                            Promise<bool> finished = new Promise<bool>();
+
+                            Promise started = new Promise();
+                            started.Then(() =>
+                            {
+                                this.unity3MXBComponent.StartCoroutine(this.StageChildrenCo(finished));
+                            });
+                            Request request = new Request(this, this.Priority(minDistance), started, finished);
+                            RequestManager.Current.EnqueRequest(request);
+                        }
                     }
                 }
             }

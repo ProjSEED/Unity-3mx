@@ -47,16 +47,18 @@ namespace Unity3MXB
             _PointCloudCache = null;
         }
 
-        protected void ConstructTexture(string id, BinaryReader br, int size)
+        protected IEnumerator ConstructTexture(string id, BinaryReader br, int size)
         {
             if (_TextureCache.ContainsKey(id) == false)
             {
                 byte[] data = br.ReadBytes(size);
+                yield return null;
                 NanoJPEG nanoJPEG = new NanoJPEG();
                 nanoJPEG.njDecode(data);
                 byte[] rawPixels = nanoJPEG.njGetImage();
+                yield return null;
 
-                if(rawPixels != null && rawPixels.Length > 0 && rawPixels.Length == nanoJPEG.njGetWidth() * nanoJPEG.njGetHeight() * 3)
+                if (rawPixels != null && rawPixels.Length > 0 && rawPixels.Length == nanoJPEG.njGetWidth() * nanoJPEG.njGetHeight() * 3)
                 {
                     Texture2D texture2d = new Texture2D(nanoJPEG.njGetWidth(), nanoJPEG.njGetHeight(), TextureFormat.RGB24, false);
                     texture2d.LoadRawTextureData(rawPixels);
@@ -70,13 +72,15 @@ namespace Unity3MXB
             }
         }
 
-        protected void ConstructMesh(string id, BinaryReader br, int size, Vector3 bbMin, Vector3 bbMax)
+        protected IEnumerator ConstructMesh(string id, BinaryReader br, int size, Vector3 bbMin, Vector3 bbMax)
         {
             // NOTE: OpenCTM does NOT support multi-threading
             if (_MeshCache.ContainsKey(id) == false)
             {
                 OpenCTM.CtmFileReader reader = new OpenCTM.CtmFileReader(br.BaseStream);
+                yield return null;
                 OpenCTM.Mesh mesh = reader.decode();
+                yield return null;
                 UnityEngine.Mesh um = new UnityEngine.Mesh();
                 mesh.checkIntegrity();
                 {
@@ -89,6 +93,7 @@ namespace Unity3MXB
                     }
                     um.vertices = Vertices;
                 }
+                yield return null;
 
                 {
                     int[] Triangles = new int[mesh.indices.Length];
@@ -100,6 +105,7 @@ namespace Unity3MXB
                     }
                     um.triangles = Triangles;
                 }
+                yield return null;
 
                 if (mesh.getUVCount() > 0)
                 {
@@ -111,6 +117,7 @@ namespace Unity3MXB
                     }
                     um.uv = UVList;
                 }
+                yield return null;
 
                 if (mesh.hasNormals())
                 {
@@ -127,6 +134,7 @@ namespace Unity3MXB
                 {
                     um.RecalculateNormals();
                 }
+                yield return null;
 
                 um.bounds.SetMinMax(bbMin, bbMax);
 
@@ -134,13 +142,14 @@ namespace Unity3MXB
             }
         }
 
-        protected void ConstructPointCloud(string id, BinaryReader br, int size, Vector3 bbMin, Vector3 bbMax)
+        protected IEnumerator ConstructPointCloud(string id, BinaryReader br, int size, Vector3 bbMin, Vector3 bbMax)
         {
             if (_PointCloudCache.ContainsKey(id) == false)
             {
                 Int32 vertNum = br.ReadInt32();
                 byte[] vertData = br.ReadBytes(vertNum * 3 * 4);
                 byte[] colorData = br.ReadBytes(vertNum * 4);
+                yield return null;
                 Vector3[] Vertices = new Vector3[vertNum];
                 Color[] Colors = new Color[vertNum];
                 int[] indecies = new int[vertNum];
@@ -155,6 +164,7 @@ namespace Unity3MXB
                     Colors[i].a = colorData[i * 4 + 3] / 255.0f;
                     indecies[i] = i;
                 }
+                yield return null;
                 Mesh um = new Mesh();
                 um.vertices = Vertices;
                 um.colors = Colors;
@@ -219,18 +229,17 @@ namespace Unity3MXB
 #if DEBUG_TIME
                             swTexture.Start();
 #endif
-                            ConstructTexture(resource.Id, br, resource.Size);
+                            yield return ConstructTexture(resource.Id, br, resource.Size);
 #if DEBUG_TIME
                             swTexture.Stop();
 #endif
-                            yield return new WaitForEndOfFrame();
                         }
                         else if (resource.Type == "geometryBuffer" && resource.Format == "ctm")
                         {
 #if DEBUG_TIME
                             swGeometry.Start();
 #endif
-                            ConstructMesh(resource.Id, br, resource.Size,
+                            yield return ConstructMesh(resource.Id, br, resource.Size,
                                 new Vector3(resource.BBMin[0], resource.BBMin[2], resource.BBMin[1]),
                                 new Vector3(resource.BBMax[0], resource.BBMax[2], resource.BBMax[1]));
 
@@ -238,20 +247,18 @@ namespace Unity3MXB
 #if DEBUG_TIME
                             swGeometry.Stop();
 #endif
-                            yield return new WaitForEndOfFrame();
                         }
                         else if (resource.Type == "geometryBuffer" && resource.Format == "xyz")
                         {
 #if DEBUG_TIME
                             swGeometry.Start();
 #endif
-                            ConstructPointCloud(resource.Id, br, resource.Size,
+                            yield return ConstructPointCloud(resource.Id, br, resource.Size,
                                 new Vector3(resource.BBMin[0], resource.BBMin[2], resource.BBMin[1]),
                                 new Vector3(resource.BBMax[0], resource.BBMax[2], resource.BBMax[1]));
 #if DEBUG_TIME
                             swGeometry.Stop();
 #endif
-                            yield return new WaitForEndOfFrame();
                         }
                         else
                         {
@@ -284,25 +291,43 @@ namespace Unity3MXB
                             Mesh pointCloud;
                             if (_MeshCache.TryGetValue(node.Resources[j], out mesh))
                             {
-                                Texture2D texture = null;
+                                GameObject goSingleMesh = new GameObject();
+                                //goSingleMesh.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
+                                goSingleMesh.transform.SetParent(commitedChild.Go.transform, false);
+
+                                MeshFilter mf = goSingleMesh.AddComponent<MeshFilter>();
+                                mf.mesh = mesh;
+
+                                MeshRenderer mr = goSingleMesh.AddComponent<MeshRenderer>();
+                                mr.enabled = false;
+
                                 string textureId;
                                 if (_meshTextureIdCache.TryGetValue(node.Resources[j], out textureId))
                                 {
                                     if (textureId != null)
                                     {
+                                        Texture2D texture;
                                         _TextureCache.TryGetValue(textureId, out texture);
+                                        mr.material.SetTexture("_MainTex", texture);
                                     }
                                 }
-                                commitedChild.AddTextureMesh(mesh, texture);
                             }
                             else if (_PointCloudCache.TryGetValue(node.Resources[j], out pointCloud))
                             {
-                                commitedChild.AddPointCloud(pointCloud);
+                                GameObject goSingleMesh = new GameObject();
+                                //goSingleMesh.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
+                                goSingleMesh.transform.SetParent(commitedChild.Go.transform, false);
+
+                                MeshFilter mf = goSingleMesh.AddComponent<MeshFilter>();
+                                mf.mesh = pointCloud;
+
+                                MeshRenderer mr = goSingleMesh.AddComponent<MeshRenderer>();
+                                mr.enabled = false;
                             }
                         }
 
                         Parent.CommitedChildren.Add(commitedChild);
-                        yield return new WaitForEndOfFrame();
+                        yield return null;
                     }
 #if DEBUG_TIME
                     swNodes.Stop();

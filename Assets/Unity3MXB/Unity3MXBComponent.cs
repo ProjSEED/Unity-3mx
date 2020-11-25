@@ -53,7 +53,7 @@ namespace Unity3MXB
             StartCoroutine(Download(null));
         }
 
-        public void Update()
+        public void LateUpdate()
         {
 #if DEBUG_TIME
             System.Diagnostics.Stopwatch swUpdate = new System.Diagnostics.Stopwatch();
@@ -69,20 +69,18 @@ namespace Unity3MXB
                     Matrix4x4 cameraMatrix = cam.projectionMatrix * cam.worldToCameraMatrix * this.transform.localToWorldMatrix;
                     camState.planes = GeometryUtility.CalculateFrustumPlanes(cameraMatrix);
                     camState.pixelSizeVector = computePixelSizeVector(cam.scaledPixelWidth, cam.scaledPixelHeight, cam.projectionMatrix, cam.worldToCameraMatrix * this.transform.localToWorldMatrix);
+                    camState.position = cam.transform.position;
                 }
 
                 // All of our bounding boxes and tiles are using tileset coordinate frame so lets get our frustrum planes
                 // in tileset frame.  This way we only need to transform our planes, not every bounding box we need to check against
-                int loadCount = 0;
-                this.Root.Traverse(Time.frameCount, camStates.ToArray(), ref loadCount, ref stagingCount);
+                this.Root.Traverse(Time.frameCount, camStates, ref stagingCount);
+                //UnityEngine.Debug.Log(string.Format("Staging {0} files", stagingCount));
 
-                //if(loadCount > 0)
-                //{
-                //    UnityEngine.Debug.Log(string.Format("Need to load {0} files", loadCount));
-                //}
+                RequestManager.Current.Process();
+
                 LRUCache.UnloadUnusedContent(this.MaximumLod, 0.2f, n => -n.Depth, t => t.UnloadChildren());
                 //UnityEngine.Debug.Log(string.Format("Used {0} pagedLODs", LRUCache.Used));
-                //UnityEngine.Debug.Log(string.Format("Staging {0} files", stagingCount));
 
                 //timeSinceLastCalled += Time.deltaTime;
                 //if (timeSinceLastCalled > delay)
