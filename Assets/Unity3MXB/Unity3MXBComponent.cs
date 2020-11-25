@@ -28,8 +28,6 @@ namespace Unity3MXB
 
         public LRUCache<PagedLOD> LRUCache = new LRUCache<PagedLOD>();
 
-        private int stagingCount = 0;
-
         public void Start()
         {
             // TODO: support to set cameras
@@ -74,8 +72,7 @@ namespace Unity3MXB
 
                 // All of our bounding boxes and tiles are using tileset coordinate frame so lets get our frustrum planes
                 // in tileset frame.  This way we only need to transform our planes, not every bounding box we need to check against
-                this.Root.Traverse(Time.frameCount, camStates, ref stagingCount);
-                //UnityEngine.Debug.Log(string.Format("Staging {0} files", stagingCount));
+                this.Root.Traverse(Time.frameCount, camStates);
 
                 RequestManager.Current.Process();
 

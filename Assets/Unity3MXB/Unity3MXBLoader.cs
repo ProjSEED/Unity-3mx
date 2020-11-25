@@ -64,10 +64,12 @@ namespace Unity3MXB
                     texture2d.LoadRawTextureData(rawPixels);
                     texture2d.filterMode = FilterMode.Bilinear;
                     texture2d.wrapMode = TextureWrapMode.Clamp;
+                    yield return null;
                     // After we conduct the Apply(), then we can make the texture non-readable and never create a CPU copy
                     texture2d.Apply(true, true);
 
                     _TextureCache.Add(id, texture2d);
+                    yield return null;
                 }
             }
         }

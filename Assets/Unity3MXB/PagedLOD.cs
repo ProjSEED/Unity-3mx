@@ -118,12 +118,8 @@ namespace Unity3MXB
             }
         }
 
-        bool MarkStagingChildren(ref int stagingCount)
+        bool MarkStagingChildren()
         {
-            if(stagingCount == 0)
-            {
-                return false;
-            }
             // recursively check every child's children's status to see if they are staging, if true, do NOT destory this child
             if (this.childrenStatus == ChildrenStatus.Unstaged)
             {
@@ -137,7 +133,6 @@ namespace Unity3MXB
             else if (this.childrenStatus == ChildrenStatus.Staged)
             {
                 this.childrenStatus = ChildrenStatus.Unstaged;
-                --stagingCount;
                 return false;
             }
 
@@ -150,7 +145,7 @@ namespace Unity3MXB
                 }
                 else
                 {
-                    hasStagingChid = hasStagingChid | child.MarkStagingChildren(ref stagingCount);
+                    hasStagingChid = hasStagingChid | child.MarkStagingChildren();
                 }
             }
             if(hasStagingChid)
@@ -180,7 +175,6 @@ namespace Unity3MXB
                 Unity3MXBLoader loaderChild = new Unity3MXBLoader(this);
                 yield return loaderChild.LoadStreamCo(file);
             }
-            this.childrenStatus = PagedLOD.ChildrenStatus.Staged;
             finished.Resolve(true);
         }
 
@@ -189,7 +183,7 @@ namespace Unity3MXB
             return (float)(this.Depth - 1.0 / distanceToCamera);
         }
 
-        public void Traverse(int frameCount, List<CamState> camStates, ref int stagingCount)
+        public void Traverse(int frameCount, List<CamState> camStates)
         {
             if(camStates.Count == 0)
             {
@@ -217,7 +211,7 @@ namespace Unity3MXB
             if (isInSide == false)
             {
                 this.EnableRenderer(false);
-                MarkStagingChildren(ref stagingCount);
+                MarkStagingChildren();
                 return;
             }
 
@@ -225,7 +219,7 @@ namespace Unity3MXB
             if (screenDiameter < MaxScreenDiameter || this.ChildrenFiles.Count == 0)
             {
                 this.EnableRenderer(true);
-                MarkStagingChildren(ref stagingCount);
+                MarkStagingChildren();
             }
             else
             {
@@ -234,7 +228,6 @@ namespace Unity3MXB
                 {
                     this.childrenStatus = ChildrenStatus.Commited;
                     this.unity3MXBComponent.LRUCache.Add(this);
-                    --stagingCount;
                 }
                 // commited
                 if (this.childrenStatus == ChildrenStatus.Commited)
@@ -243,7 +236,7 @@ namespace Unity3MXB
                     this.unity3MXBComponent.LRUCache.MarkUsed(this);
                     foreach (PagedLOD pagedLOD in this.CommitedChildren)
                     {
-                        pagedLOD.Traverse(Time.frameCount, camStates, ref stagingCount);
+                        pagedLOD.Traverse(Time.frameCount, camStates);
                     }
                 }
                 else
@@ -254,10 +247,13 @@ namespace Unity3MXB
                         if(!RequestManager.Current.Full())
                         {
                             this.childrenStatus = ChildrenStatus.Staging;
-                            ++stagingCount;
 
                             Promise<bool> finished = new Promise<bool>();
-
+                            finished.Then((success) =>
+                            {
+                                this.childrenStatus = PagedLOD.ChildrenStatus.Staged;
+                            });
+                            
                             Promise started = new Promise();
                             started.Then(() =>
                             {
