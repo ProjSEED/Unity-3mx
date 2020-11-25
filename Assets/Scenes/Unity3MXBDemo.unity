@@ -188,7 +188,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Url: data://root.3mxb
   MaximumLod: 1000
-  MaterialOverride: {fileID: 2100000, guid: b5f47f285551f47458b20a89c263ee92, type: 2}
+  MaterialOverride: {fileID: 0}
   AddColliders: 0
   ReceiveShadows: 1
 --- !u!1 &993157203
