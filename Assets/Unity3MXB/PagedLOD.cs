@@ -26,6 +26,7 @@ namespace Unity3MXB
 
         public string dir;
         public GameObject Go;  // one node could contains more than one mesh, use this GameObject as a group, insert each mesh to a child GameObject
+        public MeshRenderer[] renderers = null;
         private bool HasColliders = false;
         public bool IsPointCloud = false;
 
@@ -81,13 +82,15 @@ namespace Unity3MXB
 
         private void EnableRenderer(bool enabled)
         {
-            foreach(MeshRenderer mr in this.Go.GetComponentsInChildren<MeshRenderer>())
+            if (this.renderers == null) return;
+            for (int i = 0; i < this.renderers.Length; i++)
             {
-                if(enabled != mr.enabled)
+                var mr = this.renderers[i];
+                if (enabled != mr.enabled)
                 {
                     mr.enabled = enabled;
                 }
-                if(mr.enabled == true)
+                if (mr.enabled == true)
                 {
                     if ((this.unity3MXBComponent.MaterialOverride != null) && (mr.sharedMaterial != this.unity3MXBComponent.MaterialOverride))
                     {
@@ -99,7 +102,7 @@ namespace Unity3MXB
                     }
                     if (this.unity3MXBComponent.AddColliders)
                     {
-                        if(this.HasColliders == false)
+                        if (this.HasColliders == false)
                         {
                             MeshCollider collider = mr.gameObject.AddComponent<MeshCollider>();
                             collider.sharedMesh = mr.gameObject.GetComponent<MeshFilter>().mesh;
@@ -108,7 +111,7 @@ namespace Unity3MXB
                     }
                     else
                     {
-                        if(this.HasColliders)
+                        if (this.HasColliders)
                         {
                             GameObject.Destroy(mr.gameObject.GetComponent<MeshCollider>());
                             this.HasColliders = false;
@@ -183,6 +186,17 @@ namespace Unity3MXB
             return (float)(this.Depth - 1.0 / distanceToCamera);
         }
 
+        public bool Commit()
+        {
+            if (this.childrenStatus == ChildrenStatus.Staged)
+            {
+                this.childrenStatus = ChildrenStatus.Commited;
+                //this.Content.Initialize(this.Tileset.TilesetOptions.CreateColliders);
+                return true;
+            }
+            return false;
+        }
+
         public void Traverse(int frameCount, List<CamState> camStates)
         {
             if(camStates.Count == 0)
@@ -223,12 +237,6 @@ namespace Unity3MXB
             }
             else
             {
-                // commit
-                if (this.childrenStatus == ChildrenStatus.Staged)
-                {
-                    this.childrenStatus = ChildrenStatus.Commited;
-                    this.unity3MXBComponent.LRUCache.Add(this);
-                }
                 // commited
                 if (this.childrenStatus == ChildrenStatus.Commited)
                 {
@@ -238,6 +246,11 @@ namespace Unity3MXB
                     {
                         pagedLOD.Traverse(Time.frameCount, camStates);
                     }
+                }
+                else if (this.childrenStatus == ChildrenStatus.Staged)
+                {
+                    this.EnableRenderer(true);
+                    this.unity3MXBComponent.LRUCache.MarkUsed(this);
                 }
                 else
                 {
@@ -252,6 +265,8 @@ namespace Unity3MXB
                             finished.Then((success) =>
                             {
                                 this.childrenStatus = PagedLOD.ChildrenStatus.Staged;
+                                this.unity3MXBComponent.LRUCache.Add(this);
+                                this.unity3MXBComponent.CommitingQueue.Enqueue(this);
                             });
                             
                             Promise started = new Promise();

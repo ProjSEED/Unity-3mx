@@ -15,6 +15,7 @@ namespace Unity3MXB
         public Material MaterialOverride = null;
         public bool AddColliders = false;
         public bool ReceiveShadows = true;
+        public int MaximumTilesToCommitPerFrame = 1;
 
         private float timeSinceLastCalled;
 
@@ -27,6 +28,8 @@ namespace Unity3MXB
         private List<Camera> cams;
 
         public LRUCache<PagedLOD> LRUCache = new LRUCache<PagedLOD>();
+
+        public Queue<PagedLOD> CommitingQueue = new Queue<PagedLOD>();
 
         public void Start()
         {
@@ -75,6 +78,18 @@ namespace Unity3MXB
                 this.Root.Traverse(Time.frameCount, camStates);
 
                 RequestManager.Current.Process();
+
+                // Move any tiles with staged content to the commited state
+                int commited = 0;
+                while (commited < this.MaximumTilesToCommitPerFrame && this.CommitingQueue.Count != 0)
+                {
+                    var tile = this.CommitingQueue.Dequeue();
+                    // We allow requests to terminate early if the (would be) tile goes out of view, so check if a tile is actually processed
+                    if (tile.Commit())
+                    {
+                        commited++;
+                    }
+                }
 
                 LRUCache.UnloadUnusedContent(this.MaximumLod, 0.2f, n => -n.Depth, t => t.UnloadChildren());
                 //UnityEngine.Debug.Log(string.Format("Used {0} pagedLODs", LRUCache.Used));

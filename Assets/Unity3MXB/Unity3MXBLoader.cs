@@ -316,6 +316,7 @@ namespace Unity3MXB
                                 mf.mesh = model;
                             }
                         }
+                        commitedChild.renderers = commitedChild.Go.GetComponentsInChildren<MeshRenderer>();
 
                         Parent.CommitedChildren.Add(commitedChild);
                         yield return null;
