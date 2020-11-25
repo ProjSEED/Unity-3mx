@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
-namespace Unity3MXB
+namespace Unity3MX
 {
 
     public enum IntersectionType

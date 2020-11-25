@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Unity3MXB.Schema
+namespace Unity3MX.Schema
 {
     #pragma warning disable // Disable all warnings
     
@@ -97,5 +97,47 @@ namespace Unity3MXB.Schema
             return Newtonsoft.Json.JsonConvert.DeserializeObject<Header3MXB>(data);
         }
     }
-     
+
+    public partial class _3mxLayer
+    {
+        [Newtonsoft.Json.JsonProperty("name", Required = Newtonsoft.Json.Required.Always)]
+        public string Name { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("id", Required = Newtonsoft.Json.Required.Always)]
+        public string Id { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("root", Required = Newtonsoft.Json.Required.Always)]
+        public string Root { get; set; }
+
+        public string ToJson()
+        {
+            return Newtonsoft.Json.JsonConvert.SerializeObject(this);
+        }
+
+        public static Header3MXB FromJson(string data)
+        {
+            return Newtonsoft.Json.JsonConvert.DeserializeObject<Header3MXB>(data);
+        }
+    }
+
+    public partial class _3mx
+    {
+        [Newtonsoft.Json.JsonProperty("name", Required = Newtonsoft.Json.Required.Always)]
+        public string Name { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("layers", Required = Newtonsoft.Json.Required.Always)]
+        public List<_3mxLayer> Layers = new List<_3mxLayer>();
+
+        public string ToJson()
+        {
+            return Newtonsoft.Json.JsonConvert.SerializeObject(this);
+        }
+
+        public static Header3MXB FromJson(string data)
+        {
+            return Newtonsoft.Json.JsonConvert.DeserializeObject<Header3MXB>(data);
+        }
+    }
+
+
 }

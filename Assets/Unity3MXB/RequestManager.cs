@@ -16,7 +16,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using RSG;
 
-namespace Unity3MXB
+namespace Unity3MX
 {
 
     public class Request : PriorityQueueItem<PagedLOD>

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Web;
 using UnityEngine;
 
-namespace Unity3MXB
+namespace Unity3MX
 {
     public class UrlUtils
     {

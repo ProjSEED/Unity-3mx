@@ -16,7 +16,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace Unity3MXB
+namespace Unity3MX
 {
     public enum CacheRequestStatus
     {

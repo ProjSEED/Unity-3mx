@@ -4,7 +4,7 @@ using System.IO;
 using System.Threading.Tasks;
 #endif
 
-namespace Unity3MXB.Loader
+namespace Unity3MX.Loader
 {
 	public interface ILoader
 	{

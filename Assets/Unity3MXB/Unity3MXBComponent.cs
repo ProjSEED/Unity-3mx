@@ -6,7 +6,7 @@ using System.Linq;
 using UnityEngine;
 using RSG;
 
-namespace Unity3MXB
+namespace Unity3MX
 {
     public class Unity3MXBComponent : MonoBehaviour
     {
@@ -142,14 +142,14 @@ namespace Unity3MXB
             return pixelSizeVector;
         }
 
-    public IEnumerator Download(Promise<bool> loadComplete)
+        public IEnumerator Download(Promise<bool> loadComplete)
         {
             string url = UrlUtils.ReplaceDataProtocol(Url);
             string dir = UrlUtils.GetBaseUri(url);
 
             string file = UrlUtils.GetLastPathSegment(url);
 
-            if (file.EndsWith(".3mxb", StringComparison.OrdinalIgnoreCase))
+            if (file.EndsWith(".3mxb", StringComparison.OrdinalIgnoreCase) || file.EndsWith(".3mx", StringComparison.OrdinalIgnoreCase))
             {
                 this.Root = new PagedLOD("root", dir, this.transform, 0);
                 this.Root.unity3MXBComponent = this;

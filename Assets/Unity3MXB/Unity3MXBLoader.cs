@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
-namespace Unity3MXB
+namespace Unity3MX
 {
     public class Unity3MXBLoader : Loader.ILoader
     {
@@ -181,141 +181,157 @@ namespace Unity3MXB
                 // Using statment will ensure this.loader.LoadedStream is disposed
                 using (BinaryReader br = new BinaryReader(this.loader.LoadedStream))
                 {
-#if DEBUG_TIME
-                    System.Diagnostics.Stopwatch swHeader = new System.Diagnostics.Stopwatch();
-                    swHeader.Start();
-#endif
-
-                    // Remove query parameters if there are any
-                    string filename = relativeFilePath.Split('?')[0];
-                    const int magicNumberLen = 5;
-                    // magic number
-                    string magicNumber = new String(br.ReadChars((int)magicNumberLen));
-                    if (magicNumber != "3MXBO")
+                    if(relativeFilePath.EndsWith(".3mx", StringComparison.OrdinalIgnoreCase))
                     {
-                        Debug.LogError("Unsupported magic number in 3mxb file: " + magicNumber + " " + relativeFilePath);
-                    }
-
-                    // header size
-                    UInt32 headerSize = br.ReadUInt32();
-                    if (headerSize == 0)
-                    {
-                        Debug.LogError("Unexpected zero length header in 3mxb file: " + relativeFilePath);
-                    }
-
-                    // header
-                    string headerJson = new String(br.ReadChars((int)headerSize));
-                    Schema.Header3MXB header3MXB = JsonConvert.DeserializeObject<Schema.Header3MXB>(headerJson);
-
-#if DEBUG_TIME
-                    swHeader.Stop();
-                    System.Diagnostics.Stopwatch swTexture = new System.Diagnostics.Stopwatch();
-                    System.Diagnostics.Stopwatch swGeometry = new System.Diagnostics.Stopwatch();
-#endif
-                    // resources
-                    for (int i = 0; i < header3MXB.Resources.Count; ++i)
-                    {
-                        Schema.Resource resource = header3MXB.Resources[i];
-                        if (resource.Type == "textureBuffer" && resource.Format == "jpg")
-                        {
-#if DEBUG_TIME
-                            swTexture.Start();
-#endif
-                            yield return ConstructTexture(resource.Id, br, resource.Size);
-#if DEBUG_TIME
-                            swTexture.Stop();
-#endif
-                        }
-                        else if (resource.Type == "geometryBuffer" && resource.Format == "ctm")
-                        {
-#if DEBUG_TIME
-                            swGeometry.Start();
-#endif
-                            yield return ConstructMesh(resource.Id, br, resource.Size,
-                                new Vector3(resource.BBMin[0], resource.BBMin[2], resource.BBMin[1]),
-                                new Vector3(resource.BBMax[0], resource.BBMax[2], resource.BBMax[1]));
-
-                            _meshTextureIdCache.Add(resource.Id, resource.Texture);
-#if DEBUG_TIME
-                            swGeometry.Stop();
-#endif
-                        }
-                        else if (resource.Type == "geometryBuffer" && resource.Format == "xyz")
-                        {
-#if DEBUG_TIME
-                            swGeometry.Start();
-#endif
-                            yield return ConstructPointCloud(resource.Id, br, resource.Size,
-                                new Vector3(resource.BBMin[0], resource.BBMin[2], resource.BBMin[1]),
-                                new Vector3(resource.BBMax[0], resource.BBMax[2], resource.BBMax[1]));
-#if DEBUG_TIME
-                            swGeometry.Stop();
-#endif
-                        }
-                        else
-                        {
-                            Debug.LogError("Unexpected buffer type in 3mxb file: " + relativeFilePath);
-                        }
-                    }
-#if DEBUG_TIME
-                    System.Diagnostics.Stopwatch swNodes = new System.Diagnostics.Stopwatch();
-                    swNodes.Start();
-#endif
-                    // nodes
-                    for (int i = 0; i < header3MXB.Nodes.Count; ++i)
-                    {
-                        string url = UrlUtils.ReplaceDataProtocol(this.dir + relativeFilePath);
-                        string childDir = UrlUtils.GetBaseUri(url);
-
-                        Schema.Node node = header3MXB.Nodes[i];
-
-                        PagedLOD commitedChild = new PagedLOD(node.Id, childDir, Parent);
+                        string headerJson = new String(br.ReadChars((int)this.loader.LoadedStream.Length));
+                        Schema._3mx _3mx = JsonConvert.DeserializeObject<Schema._3mx>(headerJson);
+                        PagedLOD commitedChild = new PagedLOD(_3mx.Layers[0].Id, Parent.dir, Parent);
                         commitedChild.unity3MXBComponent = Parent.unity3MXBComponent;
-                        commitedChild.BBMin = new Vector3(node.BBMin[0], node.BBMin[2], node.BBMin[1]);
-                        commitedChild.BBMax = new Vector3(node.BBMax[0], node.BBMax[2], node.BBMax[1]);
-                        commitedChild.BoundingSphere = new TileBoundingSphere((commitedChild.BBMax + commitedChild.BBMin) / 2, (commitedChild.BBMax - commitedChild.BBMin).magnitude / 2);
-                        commitedChild.MaxScreenDiameter = node.MaxScreenDiameter;
-                        commitedChild.ChildrenFiles = node.Children;
-
-                        for (int j = 0; j < node.Resources.Count; ++j)
-                        {
-                            GameObject goSingleMesh = new GameObject();
-                            //goSingleMesh.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
-                            goSingleMesh.transform.SetParent(commitedChild.Go.transform, false);
-                            MeshRenderer mr = goSingleMesh.AddComponent<MeshRenderer>();
-                            mr.enabled = false;
-                            MeshFilter mf = goSingleMesh.AddComponent<MeshFilter>();
-
-                            Mesh model;
-                            if (_MeshCache.TryGetValue(node.Resources[j], out model))
-                            {
-                                mf.mesh = model;
-                                string textureId;
-                                if (_meshTextureIdCache.TryGetValue(node.Resources[j], out textureId))
-                                {
-                                    if (textureId != null)
-                                    {
-                                        Texture2D texture;
-                                        _TextureCache.TryGetValue(textureId, out texture);
-                                        mr.material.SetTexture("_MainTex", texture);
-                                    }
-                                }
-                            }
-                            else if (_PointCloudCache.TryGetValue(node.Resources[j], out model))
-                            {
-                                mf.mesh = model;
-                            }
-                        }
-                        commitedChild.renderers = commitedChild.Go.GetComponentsInChildren<MeshRenderer>();
-
+                        commitedChild.MaxScreenDiameter = 0;
+                        commitedChild.BoundingSphere = new TileBoundingSphere(new Vector3(0, 0, 0), 1e30f);
+                        commitedChild.ChildrenFiles = new List<string>();
+                        commitedChild.ChildrenFiles.Add(_3mx.Layers[0].Root);
                         Parent.CommitedChildren.Add(commitedChild);
                         yield return null;
                     }
+                    else
+                    {
 #if DEBUG_TIME
-                    swNodes.Stop();
-                    UnityEngine.Debug.Log(string.Format("Header: {0} ms, Texture: {1} ms, Geometry: {2} ms, Nodes: {3} m", 
-                        swHeader.ElapsedMilliseconds, swTexture.ElapsedMilliseconds, swGeometry.ElapsedMilliseconds, swNodes.ElapsedMilliseconds));
+                        System.Diagnostics.Stopwatch swHeader = new System.Diagnostics.Stopwatch();
+                        swHeader.Start();
 #endif
+
+                        // Remove query parameters if there are any
+                        string filename = relativeFilePath.Split('?')[0];
+                        const int magicNumberLen = 5;
+                        // magic number
+                        string magicNumber = new String(br.ReadChars((int)magicNumberLen));
+                        if (magicNumber != "3MXBO")
+                        {
+                            Debug.LogError("Unsupported magic number in 3mxb file: " + magicNumber + " " + relativeFilePath);
+                        }
+
+                        // header size
+                        UInt32 headerSize = br.ReadUInt32();
+                        if (headerSize == 0)
+                        {
+                            Debug.LogError("Unexpected zero length header in 3mxb file: " + relativeFilePath);
+                        }
+
+                        // header
+                        string headerJson = new String(br.ReadChars((int)headerSize));
+                        Schema.Header3MXB header3MXB = JsonConvert.DeserializeObject<Schema.Header3MXB>(headerJson);
+
+#if DEBUG_TIME
+                        swHeader.Stop();
+                        System.Diagnostics.Stopwatch swTexture = new System.Diagnostics.Stopwatch();
+                        System.Diagnostics.Stopwatch swGeometry = new System.Diagnostics.Stopwatch();
+#endif
+                        // resources
+                        for (int i = 0; i < header3MXB.Resources.Count; ++i)
+                        {
+                            Schema.Resource resource = header3MXB.Resources[i];
+                            if (resource.Type == "textureBuffer" && resource.Format == "jpg")
+                            {
+#if DEBUG_TIME
+                                swTexture.Start();
+#endif
+                                yield return ConstructTexture(resource.Id, br, resource.Size);
+#if DEBUG_TIME
+                                swTexture.Stop();
+#endif
+                            }
+                            else if (resource.Type == "geometryBuffer" && resource.Format == "ctm")
+                            {
+#if DEBUG_TIME
+                                swGeometry.Start();
+#endif
+                                yield return ConstructMesh(resource.Id, br, resource.Size,
+                                    new Vector3(resource.BBMin[0], resource.BBMin[2], resource.BBMin[1]),
+                                    new Vector3(resource.BBMax[0], resource.BBMax[2], resource.BBMax[1]));
+
+                                _meshTextureIdCache.Add(resource.Id, resource.Texture);
+#if DEBUG_TIME
+                                swGeometry.Stop();
+#endif
+                            }
+                            else if (resource.Type == "geometryBuffer" && resource.Format == "xyz")
+                            {
+#if DEBUG_TIME
+                                swGeometry.Start();
+#endif
+                                yield return ConstructPointCloud(resource.Id, br, resource.Size,
+                                    new Vector3(resource.BBMin[0], resource.BBMin[2], resource.BBMin[1]),
+                                    new Vector3(resource.BBMax[0], resource.BBMax[2], resource.BBMax[1]));
+#if DEBUG_TIME
+                                swGeometry.Stop();
+#endif
+                            }
+                            else
+                            {
+                                Debug.LogError("Unexpected buffer type in 3mxb file: " + relativeFilePath);
+                            }
+                        }
+#if DEBUG_TIME
+                        System.Diagnostics.Stopwatch swNodes = new System.Diagnostics.Stopwatch();
+                        swNodes.Start();
+#endif
+                        // nodes
+                        for (int i = 0; i < header3MXB.Nodes.Count; ++i)
+                        {
+                            string url = UrlUtils.ReplaceDataProtocol(this.dir + relativeFilePath);
+                            string childDir = UrlUtils.GetBaseUri(url);
+
+                            Schema.Node node = header3MXB.Nodes[i];
+
+                            PagedLOD commitedChild = new PagedLOD(node.Id, childDir, Parent);
+                            commitedChild.unity3MXBComponent = Parent.unity3MXBComponent;
+                            commitedChild.BBMin = new Vector3(node.BBMin[0], node.BBMin[2], node.BBMin[1]);
+                            commitedChild.BBMax = new Vector3(node.BBMax[0], node.BBMax[2], node.BBMax[1]);
+                            commitedChild.BoundingSphere = new TileBoundingSphere((commitedChild.BBMax + commitedChild.BBMin) / 2, (commitedChild.BBMax - commitedChild.BBMin).magnitude / 2);
+                            commitedChild.MaxScreenDiameter = node.MaxScreenDiameter;
+                            commitedChild.ChildrenFiles = node.Children;
+
+                            for (int j = 0; j < node.Resources.Count; ++j)
+                            {
+                                GameObject goSingleMesh = new GameObject();
+                                //goSingleMesh.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
+                                goSingleMesh.transform.SetParent(commitedChild.Go.transform, false);
+                                MeshRenderer mr = goSingleMesh.AddComponent<MeshRenderer>();
+                                mr.enabled = false;
+                                MeshFilter mf = goSingleMesh.AddComponent<MeshFilter>();
+
+                                Mesh model;
+                                if (_MeshCache.TryGetValue(node.Resources[j], out model))
+                                {
+                                    mf.mesh = model;
+                                    string textureId;
+                                    if (_meshTextureIdCache.TryGetValue(node.Resources[j], out textureId))
+                                    {
+                                        if (textureId != null)
+                                        {
+                                            Texture2D texture;
+                                            _TextureCache.TryGetValue(textureId, out texture);
+                                            mr.material.SetTexture("_MainTex", texture);
+                                        }
+                                    }
+                                }
+                                else if (_PointCloudCache.TryGetValue(node.Resources[j], out model))
+                                {
+                                    mf.mesh = model;
+                                }
+                            }
+                            commitedChild.renderers = commitedChild.Go.GetComponentsInChildren<MeshRenderer>();
+
+                            Parent.CommitedChildren.Add(commitedChild);
+                            yield return null;
+                        }
+#if DEBUG_TIME
+                        swNodes.Stop();
+                        UnityEngine.Debug.Log(string.Format("Header: {0} ms, Texture: {1} ms, Geometry: {2} ms, Nodes: {3} m", 
+                            swHeader.ElapsedMilliseconds, swTexture.ElapsedMilliseconds, swGeometry.ElapsedMilliseconds, swNodes.ElapsedMilliseconds));
+#endif
+                    }
                 }
             }
             Dispose();
