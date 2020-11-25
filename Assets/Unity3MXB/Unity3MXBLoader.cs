@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using KeyJ;
 
 namespace Unity3MXB
 {
@@ -53,24 +52,16 @@ namespace Unity3MXB
             {
                 byte[] data = br.ReadBytes(size);
                 yield return null;
-                NanoJPEG nanoJPEG = new NanoJPEG();
-                nanoJPEG.njDecode(data);
-                byte[] rawPixels = nanoJPEG.njGetImage();
+                Texture2D texture2d = new Texture2D(0, 0);
+                texture2d.LoadImage(data, false);
+                texture2d.filterMode = FilterMode.Bilinear;
+                texture2d.wrapMode = TextureWrapMode.Clamp;
                 yield return null;
+                // After we conduct the Apply(), then we can make the texture non-readable and never create a CPU copy
+                texture2d.Apply(true, true);
 
-                if (rawPixels != null && rawPixels.Length > 0 && rawPixels.Length == nanoJPEG.njGetWidth() * nanoJPEG.njGetHeight() * 3)
-                {
-                    Texture2D texture2d = new Texture2D(nanoJPEG.njGetWidth(), nanoJPEG.njGetHeight(), TextureFormat.RGB24, false);
-                    texture2d.LoadRawTextureData(rawPixels);
-                    texture2d.filterMode = FilterMode.Bilinear;
-                    texture2d.wrapMode = TextureWrapMode.Clamp;
-                    yield return null;
-                    // After we conduct the Apply(), then we can make the texture non-readable and never create a CPU copy
-                    texture2d.Apply(true, true);
-
-                    _TextureCache.Add(id, texture2d);
-                    yield return null;
-                }
+                _TextureCache.Add(id, texture2d);
+                yield return null;
             }
         }
 
@@ -115,7 +106,7 @@ namespace Unity3MXB
                     for (int j = 0; j < mesh.texcoordinates[0].values.Length / 2; j++)
                     {
                         UVList[j].x = mesh.texcoordinates[0].values[(j * 2)];
-                        UVList[j].y = 1 - mesh.texcoordinates[0].values[(j * 2) + 1];
+                        UVList[j].y = mesh.texcoordinates[0].values[(j * 2) + 1];
                     }
                     um.uv = UVList;
                 }
