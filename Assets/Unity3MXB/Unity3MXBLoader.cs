@@ -75,7 +75,6 @@ namespace Unity3MXB
                 OpenCTM.Mesh mesh = reader.decode();
                 yield return null;
                 UnityEngine.Mesh um = new UnityEngine.Mesh();
-                mesh.checkIntegrity();
                 {
                     Vector3[] Vertices = new Vector3[mesh.getVertexCount()];
                     for (int j = 0; j < mesh.getVertexCount(); j++)
