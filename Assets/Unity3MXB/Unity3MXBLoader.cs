@@ -289,20 +289,17 @@ namespace Unity3MXB
 
                         for (int j = 0; j < node.Resources.Count; ++j)
                         {
-                            Mesh mesh;
-                            Mesh pointCloud;
-                            if (_MeshCache.TryGetValue(node.Resources[j], out mesh))
+                            GameObject goSingleMesh = new GameObject();
+                            //goSingleMesh.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
+                            goSingleMesh.transform.SetParent(commitedChild.Go.transform, false);
+                            MeshRenderer mr = goSingleMesh.AddComponent<MeshRenderer>();
+                            mr.enabled = false;
+                            MeshFilter mf = goSingleMesh.AddComponent<MeshFilter>();
+
+                            Mesh model;
+                            if (_MeshCache.TryGetValue(node.Resources[j], out model))
                             {
-                                GameObject goSingleMesh = new GameObject();
-                                //goSingleMesh.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
-                                goSingleMesh.transform.SetParent(commitedChild.Go.transform, false);
-
-                                MeshFilter mf = goSingleMesh.AddComponent<MeshFilter>();
-                                mf.mesh = mesh;
-
-                                MeshRenderer mr = goSingleMesh.AddComponent<MeshRenderer>();
-                                mr.enabled = false;
-
+                                mf.mesh = model;
                                 string textureId;
                                 if (_meshTextureIdCache.TryGetValue(node.Resources[j], out textureId))
                                 {
@@ -314,17 +311,9 @@ namespace Unity3MXB
                                     }
                                 }
                             }
-                            else if (_PointCloudCache.TryGetValue(node.Resources[j], out pointCloud))
+                            else if (_PointCloudCache.TryGetValue(node.Resources[j], out model))
                             {
-                                GameObject goSingleMesh = new GameObject();
-                                //goSingleMesh.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
-                                goSingleMesh.transform.SetParent(commitedChild.Go.transform, false);
-
-                                MeshFilter mf = goSingleMesh.AddComponent<MeshFilter>();
-                                mf.mesh = pointCloud;
-
-                                MeshRenderer mr = goSingleMesh.AddComponent<MeshRenderer>();
-                                mr.enabled = false;
+                                mf.mesh = model;
                             }
                         }
 

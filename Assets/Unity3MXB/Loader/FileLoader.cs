@@ -23,7 +23,7 @@ namespace Unity3MXB.Loader
 		{
 			if (gltfFilePath == null)
 			{
-				throw new ArgumentNullException("gltfFilePath");
+				throw new ArgumentNullException("3mxFilePath");
 			}
 
 			yield return LoadFileStreamCo(_rootDirectoryPath, gltfFilePath);
