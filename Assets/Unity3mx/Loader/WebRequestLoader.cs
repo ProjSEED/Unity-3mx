@@ -10,7 +10,7 @@ using UnityEngine.Networking;
 using System.Threading.Tasks;
 #endif
 
-namespace Unity3MX.Loader
+namespace Unity3mx.Loader
 {
     public class UnityWebRequestLoader : AbstractWebRequestLoader
     {

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Unity3MX.Schema
+namespace Unity3mx.Schema
 {
     #pragma warning disable // Disable all warnings
     
@@ -76,7 +76,7 @@ namespace Unity3MX.Schema
         }
     }
     
-    public partial class Header3MXB 
+    public partial class Header3mxb 
     {
         [Newtonsoft.Json.JsonProperty("version", Required = Newtonsoft.Json.Required.Always)]
         public int Version { get; set; }
@@ -92,9 +92,9 @@ namespace Unity3MX.Schema
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
         
-        public static Header3MXB FromJson(string data)
+        public static Header3mxb FromJson(string data)
         {
-            return Newtonsoft.Json.JsonConvert.DeserializeObject<Header3MXB>(data);
+            return Newtonsoft.Json.JsonConvert.DeserializeObject<Header3mxb>(data);
         }
     }
 
@@ -114,9 +114,9 @@ namespace Unity3MX.Schema
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
 
-        public static Header3MXB FromJson(string data)
+        public static Header3mxb FromJson(string data)
         {
-            return Newtonsoft.Json.JsonConvert.DeserializeObject<Header3MXB>(data);
+            return Newtonsoft.Json.JsonConvert.DeserializeObject<Header3mxb>(data);
         }
     }
 
@@ -133,9 +133,9 @@ namespace Unity3MX.Schema
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
 
-        public static Header3MXB FromJson(string data)
+        public static Header3mxb FromJson(string data)
         {
-            return Newtonsoft.Json.JsonConvert.DeserializeObject<Header3MXB>(data);
+            return Newtonsoft.Json.JsonConvert.DeserializeObject<Header3mxb>(data);
         }
     }
 

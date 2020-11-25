@@ -5,7 +5,7 @@ using Windows.Storage;
 using System;
 using System.Collections;
 
-namespace Unity3MX.Loader
+namespace Unity3mx.Loader
 {
 	public class StorageFolderLoader : ILoader
 	{

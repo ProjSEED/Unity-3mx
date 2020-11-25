@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using RSG;
 
-namespace Unity3MX
+namespace Unity3mx
 {
     public class CamState
     {
@@ -22,7 +22,7 @@ namespace Unity3MX
             Commited        // CommitedChildren.Count = Known
         };
 
-        public Unity3MXBComponent unity3MXBComponent = null;
+        public Unity3mxComponent unity3mxComponent = null;
 
         public string dir;
         public GameObject Go;  // one node could contains more than one mesh, use this GameObject as a group, insert each mesh to a child GameObject
@@ -92,15 +92,15 @@ namespace Unity3MX
                 }
                 if (mr.enabled == true)
                 {
-                    if ((this.unity3MXBComponent.MaterialOverride != null) && (mr.sharedMaterial != this.unity3MXBComponent.MaterialOverride))
+                    if ((this.unity3mxComponent.MaterialOverride != null) && (mr.sharedMaterial != this.unity3mxComponent.MaterialOverride))
                     {
-                        mr.sharedMaterial = this.unity3MXBComponent.MaterialOverride;
+                        mr.sharedMaterial = this.unity3mxComponent.MaterialOverride;
                     }
-                    if (mr.receiveShadows != this.unity3MXBComponent.ReceiveShadows)
+                    if (mr.receiveShadows != this.unity3mxComponent.ReceiveShadows)
                     {
-                        mr.receiveShadows = this.unity3MXBComponent.ReceiveShadows;
+                        mr.receiveShadows = this.unity3mxComponent.ReceiveShadows;
                     }
-                    if (this.unity3MXBComponent.AddColliders)
+                    if (this.unity3mxComponent.AddColliders)
                     {
                         if (this.HasColliders == false)
                         {
@@ -130,7 +130,7 @@ namespace Unity3MX
             }
             else if (this.childrenStatus == ChildrenStatus.Staging)
             {
-                this.unity3MXBComponent.LRUCache.MarkUsed(this);
+                this.unity3mxComponent.LRUCache.MarkUsed(this);
                 return true;
             }
             else if (this.childrenStatus == ChildrenStatus.Staged)
@@ -153,7 +153,7 @@ namespace Unity3MX
             }
             if(hasStagingChid)
             {
-                this.unity3MXBComponent.LRUCache.MarkUsed(this);
+                this.unity3mxComponent.LRUCache.MarkUsed(this);
             }
             return hasStagingChid;
         }
@@ -175,7 +175,7 @@ namespace Unity3MX
             {
                 string file = this.ChildrenFiles[j];
                 file = file.TrimStart(slash);
-                Unity3MXBLoader loaderChild = new Unity3MXBLoader(this);
+                Unity3mxLoader loaderChild = new Unity3mxLoader(this);
                 yield return loaderChild.LoadStreamCo(file);
             }
             finished.Resolve(true);
@@ -241,7 +241,7 @@ namespace Unity3MX
                 if (this.childrenStatus == ChildrenStatus.Commited)
                 {
                     this.EnableRenderer(false);
-                    this.unity3MXBComponent.LRUCache.MarkUsed(this);
+                    this.unity3mxComponent.LRUCache.MarkUsed(this);
                     foreach (PagedLOD pagedLOD in this.CommitedChildren)
                     {
                         pagedLOD.Traverse(Time.frameCount, camStates);
@@ -250,7 +250,7 @@ namespace Unity3MX
                 else if (this.childrenStatus == ChildrenStatus.Staged)
                 {
                     this.EnableRenderer(true);
-                    this.unity3MXBComponent.LRUCache.MarkUsed(this);
+                    this.unity3mxComponent.LRUCache.MarkUsed(this);
                 }
                 else
                 {
@@ -265,14 +265,14 @@ namespace Unity3MX
                             finished.Then((success) =>
                             {
                                 this.childrenStatus = PagedLOD.ChildrenStatus.Staged;
-                                this.unity3MXBComponent.LRUCache.Add(this);
-                                this.unity3MXBComponent.CommitingQueue.Enqueue(this);
+                                this.unity3mxComponent.LRUCache.Add(this);
+                                this.unity3mxComponent.CommitingQueue.Enqueue(this);
                             });
                             
                             Promise started = new Promise();
                             started.Then(() =>
                             {
-                                this.unity3MXBComponent.StartCoroutine(this.StageChildrenCo(finished));
+                                this.unity3mxComponent.StartCoroutine(this.StageChildrenCo(finished));
                             });
                             Request request = new Request(this, this.Priority(minDistance), started, finished);
                             RequestManager.Current.EnqueRequest(request);

@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Unity3MX
+namespace Unity3mx
 {
 
     public class PriorityQueueItem<T>

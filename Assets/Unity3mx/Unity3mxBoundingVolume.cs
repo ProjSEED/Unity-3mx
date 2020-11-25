@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
-namespace Unity3MX
+namespace Unity3mx
 {
 
     public enum IntersectionType
@@ -110,7 +110,7 @@ namespace Unity3MX
 
     }
 
-    public abstract class Unity3MXBBoundingVolume
+    public abstract class Unity3mxBoundingVolume
     {
 
         public abstract IntersectionType IntersectPlane(Plane plane);
@@ -155,7 +155,7 @@ namespace Unity3MX
         }
     }
 
-    public class TileBoundingSphere : Unity3MXBBoundingVolume
+    public class TileBoundingSphere : Unity3mxBoundingVolume
     {
         public Vector3 Center;
         public float Radius;

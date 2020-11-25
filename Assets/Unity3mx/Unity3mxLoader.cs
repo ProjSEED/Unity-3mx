@@ -7,15 +7,15 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
-namespace Unity3MX
+namespace Unity3mx
 {
-    public class Unity3MXBLoader : Loader.ILoader
+    public class Unity3mxLoader : Loader.ILoader
     {
         private Loader.ILoader loader;
 
         private string dir;
 
-        public Unity3MXBLoader(PagedLOD parent)
+        public Unity3mxLoader(PagedLOD parent)
         {
             Parent = parent;
             this.dir = parent.dir;
@@ -177,16 +177,14 @@ namespace Unity3MX
             }
             else
             {
-                // We need to read the header info off of the .3mxb file
-                // Using statment will ensure this.loader.LoadedStream is disposed
                 using (BinaryReader br = new BinaryReader(this.loader.LoadedStream))
                 {
                     if(relativeFilePath.EndsWith(".3mx", StringComparison.OrdinalIgnoreCase))
                     {
-                        string headerJson = new String(br.ReadChars((int)this.loader.LoadedStream.Length));
-                        Schema._3mx _3mx = JsonConvert.DeserializeObject<Schema._3mx>(headerJson);
+                        string _3mxJson = new String(br.ReadChars((int)this.loader.LoadedStream.Length));
+                        Schema._3mx _3mx = JsonConvert.DeserializeObject<Schema._3mx>(_3mxJson);
                         PagedLOD commitedChild = new PagedLOD(_3mx.Layers[0].Id, Parent.dir, Parent);
-                        commitedChild.unity3MXBComponent = Parent.unity3MXBComponent;
+                        commitedChild.unity3mxComponent = Parent.unity3mxComponent;
                         commitedChild.MaxScreenDiameter = 0;
                         commitedChild.BoundingSphere = new TileBoundingSphere(new Vector3(0, 0, 0), 1e30f);
                         commitedChild.ChildrenFiles = new List<string>();
@@ -220,7 +218,7 @@ namespace Unity3MX
 
                         // header
                         string headerJson = new String(br.ReadChars((int)headerSize));
-                        Schema.Header3MXB header3MXB = JsonConvert.DeserializeObject<Schema.Header3MXB>(headerJson);
+                        Schema.Header3mxb header3mxb = JsonConvert.DeserializeObject<Schema.Header3mxb>(headerJson);
 
 #if DEBUG_TIME
                         swHeader.Stop();
@@ -228,9 +226,9 @@ namespace Unity3MX
                         System.Diagnostics.Stopwatch swGeometry = new System.Diagnostics.Stopwatch();
 #endif
                         // resources
-                        for (int i = 0; i < header3MXB.Resources.Count; ++i)
+                        for (int i = 0; i < header3mxb.Resources.Count; ++i)
                         {
-                            Schema.Resource resource = header3MXB.Resources[i];
+                            Schema.Resource resource = header3mxb.Resources[i];
                             if (resource.Type == "textureBuffer" && resource.Format == "jpg")
                             {
 #if DEBUG_TIME
@@ -277,15 +275,15 @@ namespace Unity3MX
                         swNodes.Start();
 #endif
                         // nodes
-                        for (int i = 0; i < header3MXB.Nodes.Count; ++i)
+                        for (int i = 0; i < header3mxb.Nodes.Count; ++i)
                         {
                             string url = UrlUtils.ReplaceDataProtocol(this.dir + relativeFilePath);
                             string childDir = UrlUtils.GetBaseUri(url);
 
-                            Schema.Node node = header3MXB.Nodes[i];
+                            Schema.Node node = header3mxb.Nodes[i];
 
                             PagedLOD commitedChild = new PagedLOD(node.Id, childDir, Parent);
-                            commitedChild.unity3MXBComponent = Parent.unity3MXBComponent;
+                            commitedChild.unity3mxComponent = Parent.unity3mxComponent;
                             commitedChild.BBMin = new Vector3(node.BBMin[0], node.BBMin[2], node.BBMin[1]);
                             commitedChild.BBMax = new Vector3(node.BBMax[0], node.BBMax[2], node.BBMax[1]);
                             commitedChild.BoundingSphere = new TileBoundingSphere((commitedChild.BBMax + commitedChild.BBMin) / 2, (commitedChild.BBMax - commitedChild.BBMin).magnitude / 2);

@@ -6,9 +6,9 @@ using System.Linq;
 using UnityEngine;
 using RSG;
 
-namespace Unity3MX
+namespace Unity3mx
 {
-    public class Unity3MXBComponent : MonoBehaviour
+    public class Unity3mxComponent : MonoBehaviour
     {
         public string Url;
         public int MaximumLod = 1000;
@@ -152,7 +152,7 @@ namespace Unity3MX
             if (file.EndsWith(".3mxb", StringComparison.OrdinalIgnoreCase) || file.EndsWith(".3mx", StringComparison.OrdinalIgnoreCase))
             {
                 this.Root = new PagedLOD("root", dir, this.transform, 0);
-                this.Root.unity3MXBComponent = this;
+                this.Root.unity3mxComponent = this;
                 this.Root.MaxScreenDiameter = 0;
                 this.Root.BoundingSphere = new TileBoundingSphere(new Vector3(0, 0, 0), 1e30f);
                 this.Root.ChildrenFiles = new List<string>();
