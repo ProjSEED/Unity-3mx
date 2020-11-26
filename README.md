@@ -10,6 +10,7 @@ Load [3MX/3MXB](https://docs.bentley.com/LiveContent/web/ContextCapture%20Help-v
 ### Tested platform
 - PC(Win) Standalone
 - WebGL
+- Android
 
 ### Tested dev env:
 - Windows 10
