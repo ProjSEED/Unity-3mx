@@ -264,9 +264,16 @@ namespace Unity3mx
                             Promise<bool> finished = new Promise<bool>();
                             finished.Then((success) =>
                             {
-                                this.childrenStatus = PagedLOD.ChildrenStatus.Staged;
-                                this.unity3mxComponent.LRUCache.Add(this);
-                                this.unity3mxComponent.CommitingQueue.Enqueue(this);
+                                if (this.CommitedChildren.Count >= this.ChildrenFiles.Count)
+                                {
+                                    this.childrenStatus = PagedLOD.ChildrenStatus.Staged;
+                                    this.unity3mxComponent.LRUCache.Add(this);
+                                    this.unity3mxComponent.CommitingQueue.Enqueue(this);
+                                }
+                                else
+                                {
+                                    this.childrenStatus = ChildrenStatus.Unstaged;
+                                }
                             });
                             
                             Promise started = new Promise();
