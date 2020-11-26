@@ -7,19 +7,23 @@ Load [3MX/3MXB](https://docs.bentley.com/LiveContent/web/ContextCapture%20Help-v
 
 ![example_pointcloud](./Doc/example_pointcloud.png)
 
-### Tested platform
+## Tested platform
 - PC(Win) Standalone
 - WebGL
 - Android
 
-### Tested dev env:
+## Tested dev env:
 - Windows 10
 - Unity2018.4.23f1
 
-### Thirdparty (source codes included for convenience):
+## Related project
+- [lodToolkit](https://github.com/ProjSEED/lodToolkit): level-of-details toolkit(LTK). Convert osgb lod tree to *3mx* tree. Convert pointcloud in *ply/las/laz/xyz* to *3mx/osgb* tree.
+- [osgPlugins-3mx](https://github.com/ProjSEED/osgPlugins-3mx): load *3mx/3mxb* format LOD model(support both mesh and pointcloud) files into OpenSceneGraph.
+
+## Thirdparty (source codes included for convenience):
 - [OpenCTM](https://github.com/BarryWangYang/OpenCTM-Optimizing-GC-)
 - [NanoJpeg](https://github.com/Deathspike/NanoJPEG.NET)
 - [Newtonsoft.Json-for-Unity](https://github.com/jilleJr/Newtonsoft.Json-for-Unity)
 
-### Known issues
+## Known issues
 - Cache strategy is NOT optimized.
