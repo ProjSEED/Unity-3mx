@@ -320,9 +320,31 @@ namespace Unity3mx
                                 }
                             }
                             commitedChild.renderers = commitedChild.Go.GetComponentsInChildren<MeshRenderer>();
-
+                            
                             Parent.CommitedChildren.Add(commitedChild);
                             yield return null;
+                        }
+                        if (!Parent.unity3mxComponent.HasBounds() && Parent.CommitedChildren.Count > 0)
+                        {
+                            Vector3 center = new Vector3();
+                            Vector3 size = new Vector3();
+                            bool hasBounds = false;
+                            {
+                                PagedLOD commitedChild = Parent.CommitedChildren[0];
+                                center = (commitedChild.BBMax + commitedChild.BBMin) / 2;
+                                size = commitedChild.BBMax - commitedChild.BBMin;
+                                hasBounds = true;
+                            }
+                            if(hasBounds)
+                            {
+                                Bounds bounds = new Bounds(center, size);
+                                foreach (PagedLOD commitedChild in Parent.CommitedChildren)
+                                {
+                                    bounds.Encapsulate(commitedChild.BBMin);
+                                    bounds.Encapsulate(commitedChild.BBMax);
+                                }
+                                Parent.unity3mxComponent.SetBounds(bounds);
+                            }
                         }
 #if DEBUG_TIME
                         swNodes.Stop();

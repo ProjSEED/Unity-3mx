@@ -4,7 +4,7 @@ using System.Collections;
 public class MoveCamera : MonoBehaviour
 {
     //观察目标
-    public Transform Target;
+    public Unity3mx.Unity3mxComponent Target;
     //观察距离
     public float Distance = 5F;
     //旋转速度
@@ -40,8 +40,13 @@ public class MoveCamera : MonoBehaviour
 
     void LateUpdate()
     {
+        if(Target == null || Target.GetBounds() == null)
+        {
+            return;
+        }
+
         //鼠标右键旋转
-        if (Target != null && Input.GetMouseButton(1))
+        if (Input.GetMouseButton(1))
         {
             //获取鼠标输入
             mX += Input.GetAxis("Mouse X") * SpeedX * 0.02F;
@@ -73,7 +78,7 @@ public class MoveCamera : MonoBehaviour
         Distance = Mathf.Clamp(Distance, MinDistance, MaxDistance);
 
         //重新计算位置
-        Vector3 mPosition = mRotation * new Vector3(0.0F, 0.0F, -Distance) + Target.position;
+        Vector3 mPosition = mRotation * new Vector3(0.0F, 0.0F, -Distance) + Target.GetBounds().center;
 
         //设置相机的角度和位置
         if (isNeedDamping)

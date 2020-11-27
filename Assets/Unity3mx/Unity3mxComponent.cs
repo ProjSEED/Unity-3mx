@@ -31,6 +31,26 @@ namespace Unity3mx
 
         public Queue<PagedLOD> CommitingQueue = new Queue<PagedLOD>();
 
+        private Bounds bounds;
+
+        private bool hasBounds;
+
+        public Bounds GetBounds()
+        {
+            return this.bounds;
+        }
+
+        public void SetBounds(Bounds box)
+        {
+            this.hasBounds = true;
+            this.bounds = box;
+        }
+
+        public bool HasBounds()
+        {
+            return this.hasBounds;
+        }
+
         public void Start()
         {
             // TODO: support to set cameras
@@ -50,6 +70,7 @@ namespace Unity3mx
                 camStates.Add(camState);
             }
 
+            this.hasBounds = false;
             // Download
             StartCoroutine(Download(null));
         }
@@ -72,7 +93,6 @@ namespace Unity3mx
                     camState.pixelSizeVector = computePixelSizeVector(cam.scaledPixelWidth, cam.scaledPixelHeight, cam.projectionMatrix, cam.worldToCameraMatrix * this.transform.localToWorldMatrix);
                     camState.position = cam.transform.position;
                 }
-
                 // All of our bounding boxes and tiles are using tileset coordinate frame so lets get our frustrum planes
                 // in tileset frame.  This way we only need to transform our planes, not every bounding box we need to check against
                 this.Root.Traverse(Time.frameCount, camStates);
