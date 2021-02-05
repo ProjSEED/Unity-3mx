@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace Unity3mx
@@ -53,14 +54,16 @@ namespace Unity3mx
                 byte[] data = br.ReadBytes(size);
                 yield return null;
                 Texture2D texture2d = new Texture2D(0, 0);
-                texture2d.LoadImage(data, false);
-                texture2d.filterMode = FilterMode.Bilinear;
-                texture2d.wrapMode = TextureWrapMode.Clamp;
+                texture2d.LoadImage(data, true);
+                //texture2d.filterMode = FilterMode.Bilinear;
+                //texture2d.wrapMode = TextureWrapMode.Clamp;
                 yield return null;
                 // After we conduct the Apply(), then we can make the texture non-readable and never create a CPU copy
-                texture2d.Apply(true, true);
+                //texture2d.Apply(true, true);
 
                 _TextureCache.Add(id, texture2d);
+
+                texture2d = null;
                 yield return null;
             }
         }
@@ -169,6 +172,11 @@ namespace Unity3mx
 
         public IEnumerator LoadStreamCo(string relativeFilePath)
         {
+            if(Parent.Go == null)
+            {
+                yield break;
+            }
+
             yield return this.loader.LoadStreamCo(relativeFilePath);
 
             if (this.loader.LoadedStream.Length == 0)
@@ -293,6 +301,7 @@ namespace Unity3mx
                             for (int j = 0; j < node.Resources.Count; ++j)
                             {
                                 GameObject goSingleMesh = new GameObject();
+                                goSingleMesh.name = "Drawable";
                                 //goSingleMesh.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
                                 goSingleMesh.transform.SetParent(commitedChild.Go.transform, false);
                                 MeshRenderer mr = goSingleMesh.AddComponent<MeshRenderer>();
