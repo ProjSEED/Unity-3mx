@@ -366,8 +366,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1385a156af4cc442bbb9c1a8b416971, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Target: {fileID: 947725857}
-  Distance: 20
+  Target: {fileID: 947725858}
+  Distance: 500
   isNeedDamping: 1
   Damping: 10
 --- !u!114 &1438352749
